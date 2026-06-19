@@ -19,3 +19,6 @@ Implemented Excel loading functionality for core datasets, developed data normal
 
 ### Day 3 - Schema Validator-- 16DQ Rules
 Implemented Data Quality Validation Framework with 16 validation rules covering primary keys, foreign keys, financial consistency checks, format validation, ratio validation, URL checks, and dataset coverage checks. Validation failures are logged and exported to CSV for auditing.
+
+### Day 4 - SQL Database Schema
+Implemented SQLite database schema with primary and foreign key relationships. Developed database loading pipeline to ingest all project datasets and validated successful data loading through table, relationship, and row count checks.
