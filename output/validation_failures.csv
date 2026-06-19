@@ -1,0 +1,21 @@
+company_id,year,field,issue,severity
+TCS,,id,Duplicate company primary key,CRITICAL
+TCS,,id,Duplicate company primary key,CRITICAL
+TCS,2024-03,"company_id,year",Duplicate annual primary key,CRITICAL
+TCS,2024-03,"company_id,year",Duplicate annual primary key,CRITICAL
+ABC,2024-03,company_id,Foreign key violation,CRITICAL
+INFY,2024-03,"total_assets,total_liabilities",Balance sheet mismatch > 1%,WARNING
+INFY,2024-03,opm_percentage,OPM mismatch > 1%,WARNING
+INFY,2024-03,sales,Sales less than or equal to zero,WARNING
+TCS,Mar-24,year,Invalid year format,CRITICAL
+INFY,2023,year,Invalid year format,CRITICAL
+A,2024-03,company_id,Ticker length outside 2-12 characters,CRITICAL
+ABCDEFGHIJKLMN,2024-03,company_id,Ticker length outside 2-12 characters,CRITICAL
+INFY,2024-03,net_cash_flow,Net cash flow mismatch > 10,WARNING
+INFY,2024-03,fixed_assets,Negative fixed assets,WARNING
+INFY,2024-03,tax_percentage,Tax rate outside 0-60%,WARNING
+INFY,2024-03,dividend_payout,Dividend payout exceeds 200%,WARNING
+INFY,,annual_report,Invalid URL format,WARNING
+INFY,2024-03,eps,Positive profit with non-positive EPS,WARNING
+INFY,2024-03,"total_assets,total_liabilities",Assets and liabilities not exactly equal,INFO
+WIPRO,,company_id,Company missing from annual dataset,WARNING
