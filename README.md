@@ -36,3 +36,7 @@ Implemented SQLite database schema with primary and foreign key relationships. D
   - Stock Prices: 5520
 - Performed foreign key validation with 0 violations.
 - Successfully created and validated nifty100.db.
+
+### Day 6 - Data Quality Manual Review
+
+Performed manual data quality review on 5 randomly selected companies ( HEROMOTOCO, TATAMOTORS, NHPC, ATGL, and TRENT). Verified historical data coverage across Profit & Loss , Balance Sheet, and Cash Flow tables. Investigated data completeness and validated DQ-16 checks for companies with less than 5 years of history. Identified JIOFIN as a valid business exception with 3 years of available data. Confirmed no ETL loader defects or schema issues requiring remediation.
