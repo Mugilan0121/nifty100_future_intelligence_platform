@@ -22,3 +22,17 @@ Implemented Data Quality Validation Framework with 16 validation rules covering 
 
 ### Day 4 - SQL Database Schema
 Implemented SQLite database schema with primary and foreign key relationships. Developed database loading pipeline to ingest all project datasets and validated successful data loading through table, relationship, and row count checks.
+
+## Day 5 – Full Data Load
+
+- Loaded all 12 datasets (7 core + 5 supplementary) into SQLite.
+- Verified load order and populated all database tables.
+- Generated load_audit.csv with per-table row counts and rejection metrics.
+- Confirmed expected row counts:
+  - Companies: 92
+  - Profit & Loss: 1276
+  - Balance Sheet: 1312
+  - Cash Flow: 1187
+  - Stock Prices: 5520
+- Performed foreign key validation with 0 violations.
+- Successfully created and validated nifty100.db.
