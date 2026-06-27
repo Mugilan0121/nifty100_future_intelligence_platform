@@ -55,3 +55,13 @@ Started Sprint 2 by developing the Financial Ratio Engine for profitability anal
 
 Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal calculations and edge cases for all implemented profitability ratios. Successfully executed the complete test suite with **8/8 tests passing** and **0 failures**, confirming the correctness of the implemented KPI calculations and laying the foundation for the remaining financial ratio engine in Sprint 2.
 
+### Day 09 – Leverage & Efficiency Ratios
+
+- Implemented Debt-to-Equity (D/E) ratio with debt-free handling.
+- Added High Leverage Flag for non-financial companies.
+- Implemented Interest Coverage Ratio (ICR) with debt-free support.
+- Added Debt Free display label and ICR warning flag.
+- Implemented Net Debt calculation.
+- Implemented Asset Turnover ratio.
+- Added 8 unit tests covering leverage and efficiency ratios.
+- Successfully passed all 16 KPI unit tests (Day 8 + Day 9).

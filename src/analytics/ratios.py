@@ -130,3 +130,136 @@ def return_on_capital_employed(
         return None
 
     return (ebit / capital_employed) * 100
+
+def debt_to_equity(
+    borrowings: float,
+    equity_capital: float,
+    reserves: float,
+) -> float | None:
+    """
+    Calculate Debt-to-Equity Ratio.
+
+    Formula:
+        borrowings / (equity_capital + reserves)
+
+    Edge Cases:
+        - Return 0 if borrowings are 0 (debt-free company)
+        - Return None if total equity is less than or equal to 0
+    """
+
+    total_equity = equity_capital + reserves
+
+    if borrowings == 0:
+        return 0
+
+    if total_equity <= 0:
+        return None
+
+    return borrowings / total_equity
+
+def high_leverage_flag(
+    debt_to_equity: float | None,
+    broad_sector: str | None,
+) -> bool:
+    """
+    Check whether a company has excessively high leverage.
+
+    Business Rule:
+    - Financial sector companies are excluded.
+    - Flag only if Debt-to-Equity > 5 for non-financial companies.
+    """
+
+    if debt_to_equity is None:
+        return False
+
+    if broad_sector is None:
+        return False
+
+    sector = broad_sector.strip().lower()
+
+    if sector == "financials":
+        return False
+
+    return debt_to_equity > 5
+
+def interest_coverage_ratio(
+    operating_profit: float,
+    other_income: float,
+    interest: float,
+) -> float | None:
+    """
+    Calculate Interest Coverage Ratio (ICR).
+
+    Formula:
+        (Operating Profit + Other Income) / Interest
+
+    Edge Case:
+        Return None if interest is zero.
+    """
+
+    if interest == 0:
+        return None
+
+    return (operating_profit + other_income) / interest
+
+def debt_free_label(
+    interest_coverage_ratio: float | None,
+) -> str:
+    """
+    Return a display label for Interest Coverage Ratio.
+    """
+
+    if interest_coverage_ratio is None:
+        return "Debt Free"
+
+    return f"{interest_coverage_ratio:.2f}"
+
+def interest_coverage_warning(
+    interest_coverage_ratio: float | None,
+) -> bool:
+    """
+    Flag companies with weak interest coverage.
+
+    Returns:
+        True  -> ICR < 1.5
+        False -> Otherwise
+    """
+
+    if interest_coverage_ratio is None:
+        return False
+
+    return interest_coverage_ratio < 1.5
+
+def net_debt(
+    borrowings: float,
+    investments: float,
+) -> float:
+    """
+    Calculate Net Debt.
+
+    Formula:
+        Net Debt = Borrowings - Investments
+
+    Investments are used as a proxy for cash and liquid assets.
+    """
+
+    return borrowings - investments
+
+def asset_turnover(
+    sales: float,
+    total_assets: float,
+) -> float | None:
+    """
+    Calculate Asset Turnover Ratio.
+
+    Formula:
+        Asset Turnover = Sales / Total Assets
+
+    Edge Case:
+        Return None if total assets are zero.
+    """
+
+    if total_assets == 0:
+        return None
+
+    return sales / total_assets
