@@ -65,3 +65,16 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
 - Implemented Asset Turnover ratio.
 - Added 8 unit tests covering leverage and efficiency ratios.
 - Successfully passed all 16 KPI unit tests (Day 8 + Day 9).
+
+### Day 10 - CAGR Engine
+
+- Implemented reusable CAGR calculation engine in `src/analytics/cagr.py`.
+- Added Revenue CAGR, PAT CAGR, and EPS CAGR wrapper functions.
+- Implemented all required CAGR edge-case handlers:
+  - DECLINE_TO_LOSS
+  - TURNAROUND
+  - BOTH_NEGATIVE
+  - ZERO_BASE
+  - INSUFFICIENT
+- Added 10 pytest unit tests covering normal calculations, edge cases, and wrapper functions.
+- Verified all tests passed successfully.
