@@ -46,3 +46,12 @@ Performed manual data quality review on 5 randomly selected companies ( HEROMOTO
 ### Day 7 - Sprint Wrap-Up & Review
 
 Created and validated `exploratory_queries.sql` with 10 exploratory SQL queries covering row counts, data coverage, and integrity checks. Successfully executed all queries against `nifty100.db` and verified database functionality. Completed Sprint 1 review by validating database outputs, confirming 92 companies loaded, verifying foreign key integrity, and running the ETL test suite with 40 passing tests and 0 failures. Documented Sprint 1 retrospective and confirmed all Sprint 1 deliverables and exit criteria were successfully achieved.
+
+## Sprint 2 Progress
+
+### Day 8 - Financial Ratio Engine (Profitability Ratios)
+
+Started Sprint 2 by developing the Financial Ratio Engine for profitability analysis. Created `src/analytics/ratios.py` and implemented Net Profit Margin (NPM), Operating Profit Margin (OPM), Return on Equity (ROE), and Return on Capital Employed (ROCE) with proper edge case handling for zero sales, negative equity, and invalid capital employed values. Added OPM source cross-check logic with anomaly logging for mismatches greater than 1%.
+
+Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal calculations and edge cases for all implemented profitability ratios. Successfully executed the complete test suite with **8/8 tests passing** and **0 failures**, confirming the correctness of the implemented KPI calculations and laying the foundation for the remaining financial ratio engine in Sprint 2.
+
