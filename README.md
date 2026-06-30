@@ -78,3 +78,12 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
   - INSUFFICIENT
 - Added 10 pytest unit tests covering normal calculations, edge cases, and wrapper functions.
 - Verified all tests passed successfully.
+
+### Day 11 – Cash Flow KPIs & Capital Allocation
+
+- Implemented Free Cash Flow (FCF) calculation.
+- Added CFO Quality Score with quality classification.
+- Implemented CapEx Intensity calculation and classification.
+- Added FCF Conversion Rate with efficiency classification.
+- Built 8-pattern Capital Allocation classifier using CFO, CFI and CFF cash flow signs.
+- Developed 35 unit tests covering KPI calculations, classifications and capital allocation scenarios.
