@@ -87,3 +87,13 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
 - Added FCF Conversion Rate with efficiency classification.
 - Built 8-pattern Capital Allocation classifier using CFO, CFI and CFF cash flow signs.
 - Developed 35 unit tests covering KPI calculations, classifications and capital allocation scenarios.
+
+### Day 12 - Financial Ratios Population
+
+- Developed `populate_financial_ratios.py` to automate financial KPI generation.
+- Merged Profit & Loss, Balance Sheet, Cash Flow and Company master data.
+- Calculated profitability, leverage, efficiency and cash flow KPIs.
+- Integrated 5-year CAGR metrics (Revenue, PAT and EPS).
+- Implemented Composite Quality Score for company-level assessment.
+- Populated the `financial_ratios` SQLite table with 1,184 records.
+- Added unit tests for merge and ratio calculation workflows.

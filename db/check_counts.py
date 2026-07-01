@@ -1,31 +1,17 @@
 import sqlite3
 
 conn = sqlite3.connect("nifty100.db")
+cursor = conn.cursor()
 
-tables = [
-    "companies",
-    "profitandloss",
-    "balancesheet",
-    "cashflow",
-    "analysis",
-    "documents",
-    "prosandcons",
-    "sectors",
-    "stock_prices",
-    "market_cap",
-    "financial_ratios",
-    "peer_groups"
-]
+cursor.execute(
+    "SELECT COUNT(*) FROM financial_ratios"
+)
 
-for table in tables:
-    try:
-        count = conn.execute(
-            f"SELECT COUNT(*) FROM {table}"
-        ).fetchone()[0]
+count = cursor.fetchone()[0]
 
-        print(f"{table}: {count}")
-
-    except Exception as e:
-        print(table, e)
+print("=" * 40)
+print("FINANCIAL_RATIOS ROW COUNT")
+print("=" * 40)
+print(count)
 
 conn.close()
