@@ -31,7 +31,9 @@ from cagr import (
 
 from cashflow_kpis import (
     free_cash_flow,
-)
+)   
+
+from quality_score import composite_quality_score
 
 DB_PATH = "nifty100.db"
 
@@ -178,7 +180,9 @@ def calculate_financial_ratios(
 
         capex = abs(row["investing_activity"])
 
-                # -----------------------------
+        
+
+        # -----------------------------
         # CAGR KPIs
         # -----------------------------
 
@@ -274,7 +278,7 @@ def calculate_financial_ratios(
 "pat_cagr_5yr": pat_growth,
 "eps_cagr_5yr": eps_growth,
 
-# Composite score (to implement later)
+# Composite quality score
 "composite_quality_score": round(composite_score, 2),
 
             }
