@@ -18,6 +18,7 @@ from ratios import (
     net_profit_margin,
     operating_profit_margin,
     return_on_equity,
+    return_on_capital_employed,
     debt_to_equity,
     interest_coverage_ratio,
     asset_turnover,
@@ -105,6 +106,8 @@ def merge_tables(
                 "company_id",
                 "face_value",
                 "book_value",
+                "roe_percentage",
+                "roce_percentage",
             ]
         ],
         on="company_id",
@@ -145,6 +148,14 @@ def calculate_financial_ratios(
             net_profit=row["net_profit"],
             equity_capital=row["equity_capital"],
             reserves=row["reserves"],
+        )
+
+        roec = return_on_capital_employed(
+            operating_profit=row["operating_profit"],
+            depreciation=row["depreciation"],
+            equity_capital=row["equity_capital"],
+            reserves=row["reserves"],
+            borrowings=row["borrowings"],
         )
 
         # -----------------------------
@@ -256,6 +267,7 @@ def calculate_financial_ratios(
                 "net_profit_margin_pct": npm,
                 "operating_profit_margin_pct": opm,
                 "return_on_equity_pct": roe,
+                "return_on_capital_employed_pct":roec,
 
                 "debt_to_equity": de_ratio,
                 "interest_coverage": icr,
@@ -285,6 +297,8 @@ def calculate_financial_ratios(
         )
 
     return pd.DataFrame(results)
+
+
 
 if __name__ == "__main__":
 

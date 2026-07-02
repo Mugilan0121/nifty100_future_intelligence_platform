@@ -85,7 +85,8 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
 - Added CFO Quality Score with quality classification.
 - Implemented CapEx Intensity calculation and classification.
 - Added FCF Conversion Rate with efficiency classification.
-- Built 8-pattern Capital Allocation classifier using CFO, CFI and CFF cash flow signs.
+- Built an 8-pattern Capital Allocation classifier using operating, investing and financing cash flow signs.
+- Generated `output/capital_allocation.csv` with capital allocation patterns for every company-year.
 - Developed 35 unit tests covering KPI calculations, classifications and capital allocation scenarios.
 
 ### Day 12 - Financial Ratios Population
@@ -99,3 +100,13 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
 - Verified successful insertion of 1,184 records.
 - Performed manual validation of ROE and Revenue CAGR for selected companies.
 - Added unit tests to validate financial ratio calculations and data population.
+
+### Day 13 - Bank ROCE Carve-Out & Edge Case Logging
+
+- Added Return on Capital Employed (ROCE) calculation to the financial ratio engine.
+- Implemented ROE and ROCE validation against reference values from the `companies` table.
+- Developed a dedicated `ratio_edge_cases.py` validation module.
+- Generated `ratio_edge_cases.log` to capture ROE and ROCE anomalies.
+- Categorized ratio validation anomalies for easier analysis and review.
+- Separated ratio validation from financial ratio population for a cleaner project structure.
+- Verified successful generation of the edge case log and validation workflow.
