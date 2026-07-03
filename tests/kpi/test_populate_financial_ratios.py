@@ -38,6 +38,7 @@ def sample_balance_sheet():
             "reserves": [500],
             "borrowings": [150],
             "total_assets": [900],
+            "depreciation": [20],
         }
     )
 

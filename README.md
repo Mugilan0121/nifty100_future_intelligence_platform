@@ -25,7 +25,7 @@ Implemented Data Quality Validation Framework with 16 validation rules covering 
 ### Day 4 - SQL Database Schema
 Implemented SQLite database schema with primary and foreign key relationships. Developed database loading pipeline to ingest all project datasets and validated successful data loading through table, relationship, and row count checks.
 
-## Day 5 – Full Data Load
+### Day 5 – Full Data Load
 
 - Loaded all 12 datasets (7 core + 5 supplementary) into SQLite.
 - Verified load order and populated all database tables.
@@ -43,7 +43,7 @@ Implemented SQLite database schema with primary and foreign key relationships. D
 
 Performed manual data quality review on 5 randomly selected companies ( HEROMOTOCO, TATAMOTORS, NHPC, ATGL, and TRENT). Verified historical data coverage across Profit & Loss , Balance Sheet, and Cash Flow tables. Investigated data completeness and validated DQ-16 checks for companies with less than 5 years of history. Identified JIOFIN as a valid business exception with 3 years of available data. Confirmed no ETL loader defects or schema issues requiring remediation.
 
-### Day 7 - Sprint Wrap-Up & Review
+### Day 7 - Sprint 1 Wrap-Up & Review
 
 Created and validated `exploratory_queries.sql` with 10 exploratory SQL queries covering row counts, data coverage, and integrity checks. Successfully executed all queries against `nifty100.db` and verified database functionality. Completed Sprint 1 review by validating database outputs, confirming 92 companies loaded, verifying foreign key integrity, and running the ETL test suite with 40 passing tests and 0 failures. Documented Sprint 1 retrospective and confirmed all Sprint 1 deliverables and exit criteria were successfully achieved.
 
@@ -110,3 +110,31 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
 - Categorized ratio validation anomalies for easier analysis and review.
 - Separated ratio validation from financial ratio population for a cleaner project structure.
 - Verified successful generation of the edge case log and validation workflow.
+
+### Day 14: Tests & Sprint Review
+
+### Objective
+Validated all implemented KPI calculations through unit testing, reviewed ratio validation logs, verified the financial ratios database, performed screener validation, and completed the Sprint 2 retrospective.
+
+### Tasks Completed
+- Executed all KPI unit tests successfully (64/64 passed).
+- Fixed test fixture compatibility issues for financial ratio population.
+- Reviewed `ratio_edge_cases.log` for validation anomalies.
+- Validated `financial_ratios` SQLite table with 1,184 company-year records.
+- Performed financial screener validation using ROE and Debt-to-Equity filters.
+- Verified KPI columns and database integrity.
+- Completed Sprint 2 retrospective documenting implementation decisions and edge-case handling.
+- Demonstrated the `financial_ratios` table with computed KPI values.
+
+### Deliverables
+- `tests/kpi/` – All 64 unit tests passing.
+- `output/ratio_edge_cases.log`
+- `financial_ratios` SQLite table (1,184 records)
+- `docs/sprint2_retrospective.md`
+
+### Validation
+- 64/64 unit tests passed successfully.
+- Financial ratios table contains 1,184 company-year records.
+- KPI columns verified successfully.
+- Screener query executed successfully.
+- Sprint 2 review completed.

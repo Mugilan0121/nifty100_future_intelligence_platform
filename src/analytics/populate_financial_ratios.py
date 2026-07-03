@@ -99,17 +99,24 @@ def merge_tables(
         how="inner",
     )
 
-    # Add company information
+    company_columns = [
+        "company_id",
+        "face_value",
+        "book_value",
+
+    ]
+
+    optional_columns = [
+        "roe_percentage",
+        "roce_percentage",
+    ]
+
+    for column in optional_columns:
+        if column in companies.columns:
+            company_columns.append(column)
+
     merged = merged.merge(
-        companies[
-            [
-                "company_id",
-                "face_value",
-                "book_value",
-                "roe_percentage",
-                "roce_percentage",
-            ]
-        ],
+        companies[company_columns],
         on="company_id",
         how="left",
     )
