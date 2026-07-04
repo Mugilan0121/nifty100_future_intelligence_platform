@@ -119,3 +119,16 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
 - Verified `financial_ratios` SQLite table (1,184 records).
 - Performed SQL screening queries for high-quality companies.
 - Completed Sprint 2 review, documentation, and retrospective.
+
+## Sprint 3 Progress
+
+### Day 15 - Filter Engine Core
+
+- Developed the financial screener engine in `src/screener/engine.py`.
+- Implemented configuration loading from `config/screener_config.yaml`.
+- Loaded financial ratios from SQLite with sector information using SQL joins.
+- Built a generic threshold-based filtering engine supporting configurable metrics.
+- Added Debt-to-Equity filtering while automatically excluding Financial sector companies.
+- Implemented Interest Coverage filtering where Debt-Free companies automatically pass the filter.
+- Sorted screening results by `composite_quality_score` in descending order.
+- Validated the filter engine with function-level tests for data loading, generic filtering, D/E filtering, and ICR filtering.
