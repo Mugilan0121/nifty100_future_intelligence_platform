@@ -76,20 +76,65 @@ def load_financial_ratios() -> pd.DataFrame:
     """
     SELECT
         fr.*,
+
+        mc.pe_ratio,
+        mc.pb_ratio,
+        mc.dividend_yield_pct,
+        mc.market_cap_crore,
+
+        pl.sales,
+
         s.broad_sector,
         s.sub_sector,
         s.market_cap_category
+
     FROM financial_ratios fr
+
+    LEFT JOIN market_cap mc
+    ON fr.company_id = mc.company_id
+    AND substr(fr.year,-4)=CAST(mc.year AS TEXT)
+
+    LEFT JOIN profitandloss pl
+    ON fr.company_id = pl.company_id
+    AND fr.year = pl.year
+
     LEFT JOIN sectors s
-        ON fr.company_id = s.company_id
+    ON fr.company_id = s.company_id
     """,
     conn,
 )
 
     logger.info(
-        "Loaded financial_ratios table (%d rows).",
-        len(df),
-    )
+    "Loaded financial_ratios table (%d rows).",
+    len(df),
+)
+
+# ----------------------------------------------------------
+# Remove duplicate company-year records
+# ----------------------------------------------------------
+
+    df = df.drop_duplicates()
+
+    logger.info(
+    "After removing duplicate rows: %d records.",
+    len(df),
+)
+
+# ----------------------------------------------------------
+# Keep latest annual record for each company
+# ----------------------------------------------------------
+
+    df = (
+    df.sort_values("year")
+      .groupby("company_id", as_index=False)
+      .tail(1)
+      .reset_index(drop=True)
+)
+
+    logger.info(
+    "Latest annual dataset contains %d companies.",
+    len(df),
+)
 
     return df
 
@@ -191,7 +236,10 @@ def apply_icr_filter(
 # Main Screener
 # ---------------------------------------------------------------------
 
-def run_custom_screen() -> pd.DataFrame:
+def run_custom_screen(
+    preset_name: str,
+) -> pd.DataFrame:
+
     """
     Run the financial screener using the configured thresholds.
     """
@@ -200,7 +248,27 @@ def run_custom_screen() -> pd.DataFrame:
 
     df = load_financial_ratios()
 
-    filters = config.get("filters", {}).copy()
+    # Keep only the latest financial year for each company
+    df = (
+    df.sort_values("year")
+      .groupby("company_id", as_index=False)
+      .tail(1)
+      .reset_index(drop=True)
+)
+
+    logger.info(
+    "Latest-year dataset contains %d companies.",
+    len(df),
+)
+
+    preset = config["presets"].get(preset_name)
+
+    if preset is None:
+        raise ValueError(
+            f"Preset '{preset_name}' not found."
+        )
+    
+    filters = preset.get("filters", {}).copy()
 
     de_filter = filters.pop("debt_to_equity", None)
     icr_filter = filters.pop("interest_coverage", None)
@@ -237,3 +305,38 @@ def run_custom_screen() -> pd.DataFrame:
     )
 
     return filtered_df
+
+# ---------------------------------------------------------------------
+# Run
+# ---------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    presets = [
+        "quality_compounder",
+        "value_pick",
+        "growth_accelerator",
+        "dividend_champion",
+        "debt_free_blue_chip",
+        "turnaround_watch",
+    ]
+
+    for preset in presets:
+        print(f"\n{'='*60}")
+        print(f"Preset : {preset}")
+        print("="*60)
+
+        result = run_custom_screen(preset)
+
+        print(f"Companies matched : {len(result)}")
+        print(
+    result[
+        [
+            "company_id",
+            "broad_sector",
+            "return_on_equity_pct",
+            "debt_to_equity",
+            "composite_quality_score",
+        ]
+    ].head(10)
+)

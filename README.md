@@ -132,3 +132,20 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
 - Implemented Interest Coverage filtering where Debt-Free companies automatically pass the filter.
 - Sorted screening results by `composite_quality_score` in descending order.
 - Validated the filter engine with function-level tests for data loading, generic filtering, D/E filtering, and ICR filtering.
+
+### Day 16 - Preset Screeners
+
+- Implemented six preset screeners in `config/screener_config.yaml`:
+  Quality Compounder, Value Pick, Growth Accelerator, Dividend Champion,
+  Debt-Free Blue Chip, and Turnaround Watch.
+- Extended `src/screener/engine.py` to load additional metrics from
+  `market_cap`, `profitandloss`, and `sectors` using SQL joins.
+- Filtered only the latest annual financial records and removed duplicate
+  company-year entries before screening.
+- Applied preset-specific threshold filters along with special handling for
+  Debt-to-Equity (excluding Financial sector companies) and Interest Coverage
+  (Debt-Free companies automatically pass).
+- Validated all six presets on the 92-company universe and confirmed each
+  returns between 5 and 50 companies as required.
+- Ranked screening results using `composite_quality_score` and verified the
+  output for each preset.
