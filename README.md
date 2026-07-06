@@ -149,3 +149,19 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
   returns between 5 and 50 companies as required.
 - Ranked screening results using `composite_quality_score` and verified the
   output for each preset.
+
+  ### Day 17 - Composite Score & Screener Export
+
+- Implemented a weighted `composite_quality_score` (0–100) using
+  Profitability, Cash Quality, Growth, and Leverage metrics.
+- Added P10/P90 winsorization and normalized all scoring metrics
+  before calculating the final composite score.
+- Calculated `sector_relative_score` by normalizing composite scores
+  within each `broad_sector` for peer-based comparison.
+- Extended `src/screener/engine.py` to export
+  `output/screener_output.xlsx` with six preset worksheets sorted by
+  `composite_quality_score` in descending order.
+- Applied Excel conditional formatting to highlight preset threshold
+  results using green (pass) and red (fail) cell colours.
+- Verified all six screener exports and confirmed correct composite
+  scoring, sector-relative scoring, sorting, and colour-coded output.

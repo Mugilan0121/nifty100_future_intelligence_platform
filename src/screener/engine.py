@@ -11,8 +11,24 @@ import logging
 import sqlite3
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import yaml
+
+from openpyxl.styles import PatternFill
+from openpyxl.utils import get_column_letter
+
+GREEN_FILL = PatternFill(
+    fill_type="solid",
+    start_color="C6EFCE",
+    end_color="C6EFCE",
+)
+
+RED_FILL = PatternFill(
+    fill_type="solid",
+    start_color="FFC7CE",
+    end_color="FFC7CE",
+)
 
 
 # ---------------------------------------------------------------------
@@ -23,6 +39,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 DATABASE_PATH = PROJECT_ROOT / "nifty100.db"
 CONFIG_PATH = PROJECT_ROOT / "config" / "screener_config.yaml"
+OUTPUT_PATH = PROJECT_ROOT / "output" / "screener_output.xlsx"
 
 
 # ---------------------------------------------------------------------
@@ -35,6 +52,216 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------
+# Composite Score Weights
+# ---------------------------------------------------------------------
+
+COMPOSITE_WEIGHTS = {
+    "return_on_equity_pct_score": 0.15,
+    "return_on_capital_employed_pct_score": 0.10,
+    "net_profit_margin_pct_score": 0.10,
+    "cfo_to_pat_ratio_score": 0.10,
+    "positive_fcf_score": 0.05,
+    "revenue_cagr_5yr_score": 0.10,
+    "pat_cagr_5yr_score": 0.10,
+    "debt_to_equity_score": 0.10,
+    "interest_coverage_score": 0.05,
+}
+
+EXPORT_COLUMNS = [
+    "company_id",
+    "broad_sector",
+    "sub_sector",
+    "market_cap_category",
+    "return_on_equity_pct",
+    "return_on_capital_employed_pct",
+    "net_profit_margin_pct",
+    "free_cash_flow_cr",
+    "cash_from_operations_cr",
+    "pat_cagr_5yr",
+    "revenue_cagr_5yr",
+    "debt_to_equity",
+    "interest_coverage",
+    "pe_ratio",
+    "pb_ratio",
+    "dividend_yield_pct",
+    "market_cap_crore",
+    "sales",
+    "composite_quality_score",
+    "sector_relative_score",
+]
+
+
+# ---------------------------------------------------------------------
+# Composite Score Helpers
+# ---------------------------------------------------------------------
+
+def winsorize_series(
+    series: pd.Series,
+    lower_percentile: float = 0.10,
+    upper_percentile: float = 0.90,
+) -> pd.Series:
+    """
+    Winsorize a numeric pandas Series.
+
+    Values below the lower percentile are clipped to P10.
+    Values above the upper percentile are clipped to P90.
+    """
+
+    # Ignore missing values while calculating percentiles
+    valid_values = series.dropna()
+
+    if valid_values.empty:
+        return series
+
+    lower_limit = valid_values.quantile(lower_percentile)
+    upper_limit = valid_values.quantile(upper_percentile)
+
+    return series.clip(
+        lower=lower_limit,
+        upper=upper_limit,
+    )
+
+def normalize_series(
+    series: pd.Series,
+) -> pd.Series:
+    """
+    Normalize a numeric Series to a 0–100 scale.
+
+    Winsorisation should be applied before calling this function.
+    """
+
+    minimum = series.min()
+    maximum = series.max()
+
+    if pd.isna(minimum) or pd.isna(maximum):
+        return pd.Series(
+            0,
+            index=series.index,
+            dtype=float,
+        )
+
+    if maximum == minimum:
+        return pd.Series(
+            100,
+            index=series.index,
+            dtype=float,
+        )
+
+    normalized = (
+        (series - minimum)
+        / (maximum - minimum)
+    ) * 100
+
+    return normalized
+
+def calculate_composite_score(
+    df: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Calculate the weighted composite quality score (0–100)
+    for each company.
+    """
+
+    scored_df = df.copy()
+
+    # ----------------------------------------------------------
+    # Derived Metrics
+    # ----------------------------------------------------------
+
+    # CFO / PAT Ratio
+    scored_df["cfo_to_pat_ratio"] = (
+        scored_df["cash_from_operations_cr"]
+        / scored_df["net_profit"]
+    )
+
+    # Positive Free Cash Flow Flag
+    scored_df["positive_fcf_score"] = np.where(
+        scored_df["free_cash_flow_cr"] > 0,
+        100,
+        0,
+    )
+
+    # ----------------------------------------------------------
+    # Normalize Metrics
+    # ----------------------------------------------------------
+
+    metrics = [
+        "return_on_equity_pct",
+        "return_on_capital_employed_pct",
+        "net_profit_margin_pct",
+        "cfo_to_pat_ratio",
+        "revenue_cagr_5yr",
+        "pat_cagr_5yr",
+        "interest_coverage",
+    ]
+
+    for metric in metrics:
+
+        winsorized = winsorize_series(
+            scored_df[metric]
+        )
+
+        scored_df[f"{metric}_score"] = normalize_series(
+            winsorized
+        )
+
+    # ----------------------------------------------------------
+    # Debt-to-Equity Score
+    # Lower Debt = Higher Score
+    # ----------------------------------------------------------
+
+    debt_score = normalize_series(
+        winsorize_series(
+            scored_df["debt_to_equity"]
+        )
+    )
+
+    scored_df["debt_to_equity_score"] = (
+        100 - debt_score
+    )
+
+        # ----------------------------------------------------------
+    # Composite Quality Score
+    # ----------------------------------------------------------
+
+    scored_df["composite_quality_score"] = 0.0
+
+    for metric, weight in COMPOSITE_WEIGHTS.items():
+
+        if metric in scored_df.columns:
+
+            scored_df["composite_quality_score"] += (
+                scored_df[metric] * weight
+            )
+
+    return scored_df
+
+def calculate_sector_relative_score(
+    df: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Calculate sector-relative composite score.
+
+    Scores are normalized within each broad sector
+    so companies are compared only against sector peers.
+    """
+
+    scored_df = df.copy()
+
+    scored_df["sector_relative_score"] = (
+        scored_df
+        .groupby("broad_sector")["composite_quality_score"]
+        .transform(
+            lambda x: normalize_series(
+                winsorize_series(x)
+            )
+        )
+    )
+
+    return scored_df
+
 
 # ---------------------------------------------------------------------
 # Configuration
@@ -83,6 +310,7 @@ def load_financial_ratios() -> pd.DataFrame:
         mc.market_cap_crore,
 
         pl.sales,
+        pl.net_profit,
 
         s.broad_sector,
         s.sub_sector,
@@ -248,6 +476,10 @@ def run_custom_screen(
 
     df = load_financial_ratios()
 
+    df = calculate_composite_score(df)
+
+    df = calculate_sector_relative_score(df)
+
     # Keep only the latest financial year for each company
     df = (
     df.sort_values("year")
@@ -306,6 +538,103 @@ def run_custom_screen(
 
     return filtered_df
 
+def export_screener_output(
+    preset_results: dict,
+) -> None:
+    """
+    Export all screener presets to a single Excel workbook.
+
+    One worksheet is created for each preset.
+    """
+
+    OUTPUT_PATH.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with pd.ExcelWriter(
+        OUTPUT_PATH,
+        engine="openpyxl",
+    ) as writer:
+
+        for preset_name, df in preset_results.items():
+
+            export_df = df.copy()
+
+            available_columns = [
+                column
+                for column in EXPORT_COLUMNS
+                if column in export_df.columns
+            ]
+
+            export_df = export_df[
+                available_columns
+            ]
+
+            export_df.to_excel(
+                writer,
+                sheet_name=preset_name,
+                index=False,
+            )
+
+            worksheet = writer.sheets[preset_name]
+
+            apply_excel_formatting(
+                writer=writer,
+                preset_name=preset_name,
+                worksheet=worksheet,
+)
+
+    logger.info(
+        "Exported screener workbook: %s",
+        OUTPUT_PATH,
+    )
+
+def apply_excel_formatting(writer, preset_name, worksheet):
+
+    config = load_screener_config()
+
+    preset = config["presets"][preset_name]
+
+    filters = preset.get("filters", {})
+
+    headers = {}
+
+    for cell in worksheet[1]:
+        headers[cell.value] = cell.column
+
+    for column_name, limits in filters.items():
+
+        if column_name not in headers:
+            continue
+
+        excel_column = headers[column_name]
+
+    for row in range(2, worksheet.max_row + 1):
+
+            cell = worksheet.cell(
+                row=row,
+                column=excel_column,
+            )
+
+            value = cell.value
+
+            if value is None:
+                continue
+
+            if "min" in limits:
+
+                if value >= limits["min"]:
+                    cell.fill = GREEN_FILL
+                else:
+                    cell.fill = RED_FILL
+
+            elif "max" in limits:
+
+                if value <= limits["max"]:
+                    cell.fill = GREEN_FILL
+                else:
+                    cell.fill = RED_FILL
 # ---------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------
@@ -321,12 +650,15 @@ if __name__ == "__main__":
         "turnaround_watch",
     ]
 
+    all_results = {}
+
     for preset in presets:
         print(f"\n{'='*60}")
         print(f"Preset : {preset}")
         print("="*60)
 
         result = run_custom_screen(preset)
+        all_results[preset] = result
 
         print(f"Companies matched : {len(result)}")
         print(
@@ -340,3 +672,7 @@ if __name__ == "__main__":
         ]
     ].head(10)
 )
+
+export_screener_output(all_results)
+print("\nExcel workbook generated successfully.")
+        
