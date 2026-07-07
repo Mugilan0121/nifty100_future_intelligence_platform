@@ -165,3 +165,13 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
   results using green (pass) and red (fail) cell colours.
 - Verified all six screener exports and confirmed correct composite
   scoring, sector-relative scoring, sorting, and colour-coded output.
+
+  ### Day 18 - Peer Percentile Rankings
+
+- Developed the `peer.py` analytics module to compute peer percentile rankings.
+- Loaded peer group mappings from `peer_groups.xlsx` and merged them with financial ratio data.
+- Calculated percentile rankings for 10 financial metrics across all 11 peer groups.
+- Applied inverse percentile ranking for Debt-to-Equity so lower values receive higher rankings.
+- Added handling for companies without a peer group assignment without interrupting execution.
+- Created and populated the `peer_percentiles` SQLite table with company-wise percentile rankings.
+- Verified successful generation and storage of 7,300 peer percentile records.
