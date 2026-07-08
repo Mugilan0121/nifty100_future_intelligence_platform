@@ -175,3 +175,13 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
 - Added handling for companies without a peer group assignment without interrupting execution.
 - Created and populated the `peer_percentiles` SQLite table with company-wise percentile rankings.
 - Verified successful generation and storage of 7,300 peer percentile records.
+
+### Day 19 - Radar Chart Generation
+
+- Developed the `radar.py` analytics module to generate radar charts for the latest financial data.
+- Merged financial ratios with peer group mappings to prepare comparison datasets.
+- Calculated peer-group averages and used Nifty100 averages as fallback reference values.
+- Implemented radar/polar charts with eight financial metrics including ROE, ROCE, NPM, D/E, FCF, PAT CAGR, Revenue CAGR, and Composite Quality Score.
+- Applied metric normalization to improve readability across different financial scales.
+- Exported one PNG radar chart per company to `reports/radar_charts/`.
+- Verified successful generation of radar chart images for all available companies.
