@@ -185,3 +185,13 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
 - Applied metric normalization to improve readability across different financial scales.
 - Exported one PNG radar chart per company to `reports/radar_charts/`.
 - Verified successful generation of radar chart images for all available companies.
+
+### Day 20 - Peer Comparison Excel Report
+
+- Developed Excel report generation for peer-wise financial comparison across all 11 peer groups.
+- Generated `output/peer_comparison.xlsx` with one worksheet for each peer group.
+- Included company details, financial metrics, and percentile rankings for comparison.
+- Applied conditional formatting to percentile columns using green (>=75th), yellow (25th–75th), and red (<=25th) colour coding.
+- Highlighted the benchmark company row with an amber background for quick identification.
+- Added a peer median summary row at the bottom of every worksheet.
+- Verified successful export and formatting of the complete peer comparison workbook.

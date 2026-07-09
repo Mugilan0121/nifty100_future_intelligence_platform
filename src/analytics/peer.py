@@ -12,6 +12,9 @@ import sqlite3
 from pathlib import Path
 
 import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill, Font
+from openpyxl.utils import get_column_letter
 
 # ---------------------------------------------------------------------
 # Project Paths
@@ -26,6 +29,12 @@ PEER_GROUPS_PATH = (
     / "data"
     / "supporting"
     / "peer_groups.xlsx"
+)
+
+OUTPUT_PATH = (
+    PROJECT_ROOT
+    / "output"
+    / "peer_comparison.xlsx"
 )
 
 # ---------------------------------------------------------------------
@@ -96,6 +105,34 @@ def load_financial_ratios(conn):
     )
 
     return ratios_df
+
+# ---------------------------------------------------------------------
+# Load Company Names
+# ---------------------------------------------------------------------
+
+def load_company_names(conn):
+    """
+    Load company names from SQLite.
+    """
+
+    query = """
+    SELECT
+        id AS company_id,
+        company_name
+    FROM companies
+    """
+
+    company_df = pd.read_sql(
+        query,
+        conn,
+    )
+
+    logger.info(
+        "Loaded %d companies.",
+        len(company_df),
+    )
+
+    return company_df
 
 # ---------------------------------------------------------------------
 # Create SQLite Table
@@ -226,6 +263,262 @@ def save_peer_percentiles(conn, percentile_df):
     )
 
 # ---------------------------------------------------------------------
+# Build Peer Comparison Report
+# ---------------------------------------------------------------------
+
+def build_peer_comparison(
+    peer_df,
+    company_df,
+    ratios_df,
+    percentile_df,
+):
+    """
+    Build one dataframe for each peer group.
+    """
+
+    latest_ratios = (
+        ratios_df
+        .sort_values(
+            ["company_id", "year"]
+        )
+        .drop_duplicates(
+            subset=["company_id"],
+            keep="last",
+        )
+    )
+
+    latest_ratios = latest_ratios.merge(
+        peer_df[
+            [
+                "company_id",
+                "peer_group_name",
+            ]
+        ],
+        on="company_id",
+        how="left",
+    )
+
+    latest_percentiles = (
+        percentile_df
+        .sort_values(
+            ["company_id", "year"]
+        )
+        .drop_duplicates(
+            subset=[
+                "company_id",
+                "metric",
+            ],
+            keep="last",
+        )
+    )
+
+    pivot_percentiles = (
+        latest_percentiles
+        .pivot(
+            index="company_id",
+            columns="metric",
+            values="percentile_rank",
+        )
+        .reset_index()
+    )
+
+    pivot_percentiles.columns = [
+
+    (
+        f"{col}_percentile"
+        if col != "company_id"
+        else col
+    )
+
+    for col in pivot_percentiles.columns
+]
+
+    peer_reports = {}
+
+    for peer_group in peer_df[
+        "peer_group_name"
+    ].unique():
+
+        members = peer_df[
+            peer_df["peer_group_name"] == peer_group
+        ]["company_id"]
+
+        report_df = latest_ratios[
+            latest_ratios["company_id"].isin(members)
+        ].copy()
+
+        report_df = report_df.merge(
+            company_df,
+            on="company_id",
+            how="left",
+        )
+
+        report_df = report_df.merge(
+            pivot_percentiles,
+            on="company_id",
+            how="left",
+        )
+
+        peer_reports[peer_group] = report_df
+
+        logger.info(
+            "%s : %d companies",
+            peer_group,
+            len(report_df),
+        )
+
+    return peer_reports
+
+GREEN_FILL = PatternFill(
+    fill_type="solid",
+    start_color="C6EFCE",
+    end_color="C6EFCE",
+)
+
+YELLOW_FILL = PatternFill(
+    fill_type="solid",
+    start_color="FFEB9C",
+    end_color="FFEB9C",
+)
+
+RED_FILL = PatternFill(
+    fill_type="solid",
+    start_color="FFC7CE",
+    end_color="FFC7CE",
+)
+
+BENCHMARK_FILL = PatternFill(
+    fill_type="solid",
+    start_color="FFD966",
+    end_color="FFD966",
+)
+
+MEDIAN_FILL = PatternFill(
+    fill_type="solid",
+    start_color="D9EAD3",
+    end_color="D9EAD3",
+)
+
+def export_peer_comparison(peer_reports):
+
+    OUTPUT_PATH.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with pd.ExcelWriter(
+        OUTPUT_PATH,
+        engine="openpyxl",
+    ) as writer:
+
+        for peer_group, report_df in peer_reports.items():
+
+            sheet_name = peer_group[:31]
+
+            report_df.to_excel(
+                writer,
+                sheet_name=sheet_name,
+                index=False,
+            )
+
+            ws = writer.sheets[sheet_name]
+
+            # -----------------------------
+            # Benchmark company
+            # -----------------------------
+
+            if "composite_score" in report_df.columns:
+                benchmark = report_df["composite_score"].idxmax()
+            else:
+                benchmark = report_df[
+                    "return_on_equity_pct"
+                ].idxmax()
+
+            excel_row = benchmark + 2
+
+            for cell in ws[excel_row]:
+                cell.fill = BENCHMARK_FILL
+                cell.font = Font(bold=True)
+
+            # -----------------------------
+            # Percentile colouring
+            # -----------------------------
+
+            percentile_cols = [
+                i + 1
+                for i, col in enumerate(report_df.columns)
+                if col.endswith("_percentile")
+            ]
+
+            for col in percentile_cols:
+
+                for row in range(2, len(report_df) + 2):
+
+                    cell = ws.cell(
+                        row=row,
+                        column=col,
+                    )
+
+                    try:
+                        value = float(cell.value)
+                    except (TypeError, ValueError):
+                        continue
+
+                    if value >= 0.75:
+                        cell.fill = GREEN_FILL
+
+                    elif value <= 0.25:
+                        cell.fill = RED_FILL
+
+                    else:
+                        cell.fill = YELLOW_FILL
+
+            # -----------------------------
+            # Median Row
+            # -----------------------------
+
+            median_row = ["Peer Median"]
+
+            for col in report_df.columns[1:]:
+
+                if pd.api.types.is_numeric_dtype(
+                    report_df[col]
+                ):
+                    median_row.append(report_df[col].median())
+                else:
+                    median_row.append("")
+
+            ws.append(median_row)
+
+            last = ws.max_row
+
+            for cell in ws[last]:
+                cell.fill = MEDIAN_FILL
+                cell.font = Font(bold=True)
+
+            # -----------------------------
+            # Autosize columns
+            # -----------------------------
+
+            for column_cells in ws.columns:
+
+                length = max(
+                    len(str(cell.value))
+                    if cell.value is not None
+                    else 0
+                    for cell in column_cells
+                )
+
+                ws.column_dimensions[
+                    get_column_letter(column_cells[0].column)
+                ].width = length + 3
+
+    logger.info(
+        "Peer comparison exported to %s",
+        OUTPUT_PATH,
+    )
+
+# ---------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------
 
@@ -236,6 +529,8 @@ def main():
     create_peer_percentiles_table(conn)
 
     peer_df = load_peer_groups()
+
+    company_df = load_company_names(conn)
 
     ratios_df = load_financial_ratios(conn)
 
@@ -249,6 +544,23 @@ def main():
         percentile_df,
     )
 
+    peer_reports = build_peer_comparison(
+        peer_df,
+        company_df,
+        ratios_df,
+        percentile_df,
+    )
+
+    export_peer_comparison(
+        peer_reports,
+    )
+
+    for name, df in peer_reports.items():
+
+        print(f"\n{name}")
+
+        print(df.head())
+
     print("\nPeer Percentiles")
     print(percentile_df.head(15))
 
@@ -257,4 +569,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
