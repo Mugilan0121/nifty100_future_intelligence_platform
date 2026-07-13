@@ -205,3 +205,44 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
 - Confirmed successful generation of all Sprint 3 deliverables, including screener reports, peer comparison workbook, radar charts, peer percentile data, and configuration files.
 - Created Sprint 3 Summary and Sprint 3 Retrospective documentation.
 - Completed Sprint 3 quality assurance, testing, and review, confirming the project is ready to proceed to Sprint 4.
+
+## Sprint 4 Progress
+
+### Day 22 - Streamlit App Scaffold
+
+- Created `src/dashboard/app.py` as the main Streamlit entry point with sidebar navigation to all 8 screens.
+- Built `src/dashboard/utils/db.py` as a shared, cached data-access layer — every screen reads through this module instead of querying SQLite directly.
+- Implemented core data loaders: `get_companies()`, `get_ratios()`, `get_latest_ratios()`, `get_pl()`, `get_bs()`, `get_cf()`, `get_peers()`, `get_capital_allocation()`, and `get_valuation()`, all wrapped in `@st.cache_data(ttl=600)`.
+- Set Streamlit page config: wide layout, page title "Nifty 100 Analytics," sidebar expanded by default.
+- Verified `streamlit run src/dashboard/app.py` launches cleanly with no import errors.
+
+### Day 23 - Home Screen & Company Profile Screen
+
+- Home screen (`pages/01_home.py`): 6 summary KPI tiles (Average ROE, Median P/E, Median D/E, Total Companies, Median Revenue CAGR 5yr, Debt-Free Companies count), sector breakdown donut chart, and a Top-5-by-Composite-Quality-Score table.
+- Added a year selector in the sidebar; all Home metrics update on year change.
+- Company Profile screen (`pages/02_profile.py`): dropdown-based company search with autocomplete, company card (name, sector, description), 6 KPI tiles (ROE, ROCE, Net Profit Margin, D/E, Revenue CAGR 5yr, FCF), a 10-year Revenue vs Net Profit bar chart, a ROE vs ROCE dual-line trend chart, and a pros/cons section.
+- Discovered and fixed a bug in `src/screener/engine.py`: the final two lines (`export_screener_output` call and print statement) were not indented under `if __name__ == "__main__":`, causing them to execute on every import and break any script importing the module.
+- Created `src/analytics/backfill_composite_score.py` to persist `composite_quality_score` and `sector_relative_score` into the `financial_ratios` table, since these were previously computed only at runtime inside the screener and weren't available to other screens.
+
+### Day 24 - Screener Screen & Peer Comparison Screen
+
+- Screener screen (`pages/03_screener.py`): 10 sidebar sliders (ROE, D/E, FCF, Revenue CAGR, PAT CAGR, OPM, P/E, P/B, Dividend Yield, Interest Coverage), 6 preset buttons that auto-fill thresholds, a live-updating results table, a company-count label, and a CSV download button.
+- Replicated the Debt-to-Equity (exclude Financials) and Interest Coverage (debt-free auto-pass) business rules from the Sprint 3 screener engine directly in the dashboard filter logic.
+- Peer Comparison screen (`pages/04_peers.py`): peer group dropdown covering all 11 groups, a normalized 8-axis radar chart (company vs. group average vs. benchmark), and a side-by-side comparison table with the benchmark row highlighted.
+- Fixed a data-join bug in `utils/db.py`: the `market_cap` join used `substr(fr.year, -4)` instead of `substr(fr.year, 1, 4)`, which silently returned null valuation columns (P/E, P/B, dividend yield) across the Home and Screener screens.
+
+### Day 25 - Remaining 4 Screens
+
+- Trend Analysis (`pages/05_trends.py`): company search, multi-metric selector (overlay up to 3 metrics), 10-year trend chart with hover-based YoY change tooltips, and a secondary y-axis for ratio-scale metrics (D/E, Asset Turnover) so they don't flatten against percentage-scale metrics (ROE, ROCE).
+- Sector Analysis (`pages/06_sectors.py`): sector dropdown, a Revenue vs. ROE bubble chart (bubble size = market cap, color = sub-sector), and a sector median KPI bar chart. Added a fallback bubble size and a missing-data caveat for sectors where market cap coverage is incomplete for the latest year.
+- Capital Allocation Map (`pages/07_capital.py`): treemap of all companies by capital allocation pattern, with a dropdown-driven drill-down table. Corrected the year-handling logic to use each company's most recent available year individually, since fiscal year-ends vary by company (Mar/Jun/Sep/Dec) and no single shared calendar year exists across the universe.
+- Annual Reports (`pages/08_reports.py`): company search, year filter, and clickable BSE PDF links. Added a cached, browser-header-spoofed `is_url_valid()` check in `utils/db.py` to flag genuinely broken links with a red "Report unavailable" badge, mirroring the project's DQ-13 validation rule.
+- Added `LEFT JOIN profitandloss` to the `get_ratios()` query in `utils/db.py` after discovering `sales` and `net_profit` were missing from the financial ratios data layer, which had been silently blocking the Sector Analysis bubble chart.
+
+### Day 26 - Valuation Module
+
+- Built `src/analytics/valuation.py`, reading `market_cap` history joined with company, sector, and latest free cash flow data.
+- Computed FCF Yield (`FCF / Market Cap × 100`), 5-year median P/E per company, and sector median P/E based on each company's latest year.
+- Implemented the overvaluation flag rule: P/E > sector median × 1.5 → "Caution"; P/E < sector median × 0.7 → "Discount"; otherwise "Fair."
+- Generated `output/valuation_summary.xlsx` (all companies, latest-year valuation metrics and flags) and `output/valuation_flags.csv` (Caution/Discount companies only, sorted by deviation from sector median).
+- Identified a data-quality issue during review: `NHPC`'s `company_name` field contains an embedded newline character (`"NHPC Ltd\n"`), consistent with the known data quirk documented in the project's dataset catalogue — flagged for a future ETL cleanup pass rather than fixed inline in the dashboard.

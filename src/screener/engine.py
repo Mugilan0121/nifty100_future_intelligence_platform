@@ -673,6 +673,6 @@ if __name__ == "__main__":
     ].head(10)
 )
 
-export_screener_output(all_results)
-print("\nExcel workbook generated successfully.")
+    export_screener_output(all_results)
+    print("\nExcel workbook generated successfully.")
         
