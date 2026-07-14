@@ -34,17 +34,23 @@ if ratios.empty:
     st.warning("No financial ratio data found. Run the ETL and ratio engine first.")
     st.stop()
 
-# ---------------------------------------------------------------------
-# Year selector (sidebar) — filters everything below
-# ---------------------------------------------------------------------
+# Fiscal year-ends vary by company (Mar/Jun/Sep/Dec), so there's no single
+# shared "latest year" across all 92 companies. Use each company's most
+# recent available year instead of filtering to one exact year string.
+year_df = (
+    ratios.sort_values("year")
+    .groupby("company_id", as_index=False)
+    .tail(1)
+    .reset_index(drop=True)
+)
 
-available_years = sorted(ratios["year"].dropna().unique(), reverse=True)
-selected_year = st.sidebar.selectbox("Year", available_years, index=0)
-
-year_df = ratios[ratios["year"] == selected_year]
+st.sidebar.caption(
+    "Showing each company's most recent available financial year "
+    "(fiscal year-end varies by company)."
+)
 
 if year_df.empty:
-    st.warning(f"No data available for {selected_year}.")
+    st.warning("No financial ratio data available.")
     st.stop()
 
 # ---------------------------------------------------------------------
