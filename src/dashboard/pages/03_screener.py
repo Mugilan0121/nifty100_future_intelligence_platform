@@ -30,33 +30,33 @@ if df.empty:
 PRESETS = {
     "Quality": {
         "roe_min": 15, "de_max": 1.0, "fcf_min": 0, "rev_cagr_min": 10,
-        "pat_cagr_min": -100, "opm_min": -100, "pe_max": 999, "pb_max": 999,
-        "div_yield_min": 0, "icr_min": 0,
+        "pat_cagr_min": -30, "opm_min": -30, "pe_max": 100, "pb_max": 20.0,
+        "div_yield_min": 0.0, "icr_min": 0,
     },
     "Value": {
-        "roe_min": -100, "de_max": 2.0, "fcf_min": -999999, "rev_cagr_min": -100,
-        "pat_cagr_min": -100, "opm_min": -100, "pe_max": 20, "pb_max": 3,
+        "roe_min": -50, "de_max": 2.0, "fcf_min": -50000, "rev_cagr_min": -30,
+        "pat_cagr_min": -30, "opm_min": -30, "pe_max": 20, "pb_max": 3.0,
         "div_yield_min": 0.5, "icr_min": 0,
     },
     "Growth": {
-        "roe_min": -100, "de_max": 2.0, "fcf_min": -999999, "rev_cagr_min": 15,
-        "pat_cagr_min": 20, "opm_min": -100, "pe_max": 999, "pb_max": 999,
-        "div_yield_min": 0, "icr_min": 0,
+        "roe_min": -50, "de_max": 2.0, "fcf_min": -50000, "rev_cagr_min": 15,
+        "pat_cagr_min": 20, "opm_min": -30, "pe_max": 100, "pb_max": 20.0,
+        "div_yield_min": 0.0, "icr_min": 0,
     },
     "Dividend": {
-        "roe_min": -100, "de_max": 999, "fcf_min": 0, "rev_cagr_min": -100,
-        "pat_cagr_min": -100, "opm_min": -100, "pe_max": 999, "pb_max": 999,
-        "div_yield_min": 2, "icr_min": 0,
+        "roe_min": -50, "de_max": 10.0, "fcf_min": 0, "rev_cagr_min": -30,
+        "pat_cagr_min": -30, "opm_min": -30, "pe_max": 100, "pb_max": 20.0,
+        "div_yield_min": 2.0, "icr_min": 0,
     },
     "Debt-Free": {
-        "roe_min": 12, "de_max": 0, "fcf_min": -999999, "rev_cagr_min": -100,
-        "pat_cagr_min": -100, "opm_min": -100, "pe_max": 999, "pb_max": 999,
-        "div_yield_min": 0, "icr_min": 0,
+        "roe_min": 12, "de_max": 0.0, "fcf_min": -50000, "rev_cagr_min": -30,
+        "pat_cagr_min": -30, "opm_min": -30, "pe_max": 100, "pb_max": 20.0,
+        "div_yield_min": 0.0, "icr_min": 0,
     },
     "Turnaround": {
-        "roe_min": -100, "de_max": 999, "fcf_min": -999999, "rev_cagr_min": 10,
-        "pat_cagr_min": -100, "opm_min": -100, "pe_max": 999, "pb_max": 999,
-        "div_yield_min": 0, "icr_min": 0,
+        "roe_min": -50, "de_max": 10.0, "fcf_min": -50000, "rev_cagr_min": 10,
+        "pat_cagr_min": -30, "opm_min": -30, "pe_max": 100, "pb_max": 20.0,
+        "div_yield_min": 0.0, "icr_min": 0,
     },
 }
 
