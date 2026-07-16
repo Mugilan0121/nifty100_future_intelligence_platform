@@ -119,8 +119,9 @@ table_df = table_df.rename(columns={**RADAR_METRICS, "company_id": "Ticker", "is
 table_df["Benchmark"] = table_df["Benchmark"].map({1: "⭐", 0: ""})
 
 def highlight_benchmark(row):
-    is_bench = row["Benchmark"] == "⭐"
-    return ["background-color: #FFF3CD" if is_bench else "" for _ in row]
+    if row['Ticker'] == benchmark_ticker:
+        return ['background-color: #fff3cd; color: #000000'] * len(row)
+    return [''] * len(row)
 
 st.dataframe(
     table_df.style.apply(highlight_benchmark, axis=1),

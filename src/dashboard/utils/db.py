@@ -56,6 +56,38 @@ def is_url_valid(url: str) -> bool:
         return response.status_code == 200
     except requests.RequestException:
         return False
+    
+import base64
+
+@st.cache_data(ttl=86400)
+def get_logo_data_uri(url: str) -> str | None:
+    """
+    Downloads a company logo server-side and returns it as a base64 data URI,
+    or None if it can't be fetched. Avoids browser-side hotlink/CSP issues —
+    if this succeeds, the image is guaranteed to render.
+    """
+    if not url or not isinstance(url, str) or not url.strip():
+        return None
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        )
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=5)
+        if response.status_code != 200 or not response.content:
+            return None
+        content_type = response.headers.get("Content-Type", "image/png")
+        if "image" not in content_type:
+            return None
+        b64 = base64.b64encode(response.content).decode("utf-8")
+        return f"data:{content_type};base64,{b64}"
+    except requests.RequestException:
+        return None
 
 # ---------------------------------------------------------------------
 # Companies + Sectors
@@ -121,7 +153,7 @@ def get_ratios(ticker: str | None = None, year: str | None = None) -> pd.DataFra
         FROM financial_ratios fr
         LEFT JOIN market_cap mc
             ON fr.company_id = mc.company_id
-            AND substr(fr.year, 1, 4) = CAST(mc.year AS TEXT)
+            AND substr(fr.year, -4) = CAST(mc.year AS TEXT)
         LEFT JOIN profitandloss pl
             ON fr.company_id = pl.company_id
             AND fr.year = pl.year

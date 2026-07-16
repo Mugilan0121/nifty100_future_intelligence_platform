@@ -246,3 +246,21 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
 - Implemented the overvaluation flag rule: P/E > sector median × 1.5 → "Caution"; P/E < sector median × 0.7 → "Discount"; otherwise "Fair."
 - Generated `output/valuation_summary.xlsx` (all companies, latest-year valuation metrics and flags) and `output/valuation_flags.csv` (Caution/Discount companies only, sorted by deviation from sector median).
 - Identified a data-quality issue during review: `NHPC`'s `company_name` field contains an embedded newline character (`"NHPC Ltd\n"`), consistent with the known data quirk documented in the project's dataset catalogue — flagged for a future ETL cleanup pass rather than fixed inline in the dashboard.
+
+### Day 27 - Integration QA & Bug Fixes
+
+- Built scripts/qa_smoke_test.py, a reusable smoke test that dynamically pulls 10 tickers spanning IT, Financials, FMCG, Energy, and Healthcare from get_companies() and exercises every query path used across all 8 screens — get_ratios, get_pl, get_bs, get_cf, get_prosandcons, get_documents, get_valuation, get_peers, get_peer_percentiles — logging PASS/FAIL/WARN per call rather than relying on manual click-through.
+- Confirmed no crashes across all 92 companies; flagged ADANIGREEN as a genuine partial-data case (9 years of P&L history vs. the usual 10) rather than a loader bug.
+- Found and fixed a silent join bug in get_ratios(): the join to market_cap used substr(fr.year, 1, 4) on values like "Mar 2013", which returns "Mar " instead of the year — silently nulling pe_ratio, pb_ratio, and ev_ebitda for every company across every year. Changed to substr(fr.year, -4) to correctly extract the year digits.
+- Fixed a text-contrast bug on the Peer Comparison benchmark row (pages/04_peers.py) where the highlight style set background-color without color, making the row illegible; added explicit color: #000000.
+- Fixed a NameError in pages/04_peers.py from a leftover df_display reference to a variable renamed during refactor; removed the dead line and standardized on table_df.
+- Diagnosed inconsistent company-logo rendering on the Company Profile screen: server-side is_url_valid() checks passed but some logos still failed to render client-side due to hotlink protection the requests library doesn't trigger. Replaced the approach with get_logo_data_uri() in utils/db.py — downloads the logo server-side with browser-mimicking headers and embeds it as a cached base64 data URI, falling back to a placeholder tile only when the source is genuinely unreachable.
+- Simulated Screener slider-extreme behavior (all-minimum, all-maximum, and an impossible range) directly against get_latest_ratios() — confirmed no crash and correct empty-result handling.
+- Measured Company Profile full query-set load time (ratios + P&L + BS + CF + pros/cons + documents) across 5 tickers — all completed in under 0.1s, well inside the 3-second budget.
+
+### Day 28 - Retro, Documentation and Sprint 4 wrap-up
+
+- Updated README.md with Day 27–28 entries documenting the QA pass, root causes, and fixes.
+- Wrote docs/sprint4_retro.md following the project's established retro format (Sprint Goal / What Went Well / Challenges Faced / Improvements for Next Sprint / Sprint Outcome), covering the dashboard build, the 5 bugs found and fixed, and process notes — most notably that Streamlit's hot-reload doesn't reliably pick up changes to shared utils/ modules, requiring a full server restart rather than a browser refresh.
+- Wrote docs/sprint4_summary.md with a condensed overview of what was built, fixed, and verified.
+- Confirmed exit criteria: all 8 screens load without errors across all 92 tickers, Company Profile loads well under 3 seconds, Screener CSV export produces correct headers under extreme filter values, and valuation_summary.xlsx contains 92 rows with all required columns.

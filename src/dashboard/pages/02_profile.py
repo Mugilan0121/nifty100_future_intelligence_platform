@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from utils.db import get_companies, get_ratios, get_pl, get_bs, get_prosandcons
+from utils.db import get_companies, get_ratios, get_pl, get_bs, get_prosandcons, get_logo_data_uri
 
 st.set_page_config(page_title="Company Profile | Nifty 100 Analytics", layout="wide")
 
@@ -52,11 +52,17 @@ company_row = companies[companies["id"] == ticker].iloc[0]
 card_col1, card_col2 = st.columns([1, 3])
 
 with card_col1:
-    if company_row.get("company_logo"):
-        try:
-            st.image(company_row["company_logo"], width=100)
-        except Exception:
-            st.write("🏢")
+    logo_url = company_row.get("company_logo")
+    data_uri = get_logo_data_uri(logo_url) if logo_url else None
+    if data_uri:
+        st.image(data_uri, width=100)
+    else:
+        st.markdown(
+            "<div style='font-size:48px; width:100px; height:100px; "
+            "display:flex; align-items:center; justify-content:center; "
+            "background:#1e2530; border-radius:12px;'>🏢</div>",
+            unsafe_allow_html=True,
+        )
 
 with card_col2:
     st.subheader(company_row["company_name"])
