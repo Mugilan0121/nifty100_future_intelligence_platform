@@ -264,3 +264,35 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
 - Wrote docs/sprint4_retro.md following the project's established retro format (Sprint Goal / What Went Well / Challenges Faced / Improvements for Next Sprint / Sprint Outcome), covering the dashboard build, the 5 bugs found and fixed, and process notes — most notably that Streamlit's hot-reload doesn't reliably pick up changes to shared utils/ modules, requiring a full server restart rather than a browser refresh.
 - Wrote docs/sprint4_summary.md with a condensed overview of what was built, fixed, and verified.
 - Confirmed exit criteria: all 8 screens load without errors across all 92 tickers, Company Profile loads well under 3 seconds, Screener CSV export produces correct headers under extreme filter values, and valuation_summary.xlsx contains 92 rows with all required columns.
+
+## Sprint 5 Progress
+
+### Day 29 - NLP Analysis Text Parser
+
+- Discovered the analysis table structure differs from the initial spec assumption: rather than one row per company with multi-period text packed into each cell, it stores one row per (company, period) — e.g. HDFCBANK has a single 10-year row, while SBILIFE has separate 5-year and 3-year rows, with all 4 metric columns in a row sharing that row's period label.
+- Built src/nlp/parser.py, parsing compounded_sales_growth, compounded_profit_growth, stock_price_cagr, and roe using the regex pattern (\d+)\s*Years?:?\s*(-?[\d.]+)\s*%, with the colon made optional to handle inconsistently formatted entries like "5 Years 14%".
+- Found the initial pattern was silently dropping negative values ("1 Year: -2%", "3 Years: -1%") because [\d.]+ didn't permit a minus sign; added -? to capture negative CAGR and stock-return figures correctly.
+- Generated output/analysis_parsed.csv with 65 parsed rows in long format (company_id, metric_type, period_years, value_pct).
+- Generated output/parse_failures.csv with 15 rows — all genuinely outside the "N Years:" format (e.g. "TTM: 43%", "Last Year: 12%"), logged for the ETL cleanup catalogue rather than force-matched.
+- Cross-validated 5-year parsed compounded_sales_growth and compounded_profit_growth against computed revenue_cagr_5yr and pat_cagr_5yr from financial_ratios, flagging divergence greater than 5 percentage points into output/cagr_divergence.csv — 0 companies flagged, confirming the parsed and computed CAGR figures agree.
+
+
+### Day 30 - NLP Auto Pros/Cons Generator
+
+- Built src/nlp/pros_cons_generator.py implementing all 12 pro rules and 12 con rules against financial_ratios, balancesheet, and profitandloss, with a documented confidence heuristic and only rules above 60% confidence included in the output.
+- Resolved a spec conflict in Pro Rule 11 (header vs. rule text implied opposite conditions) by implementing per the text — genuine operating leverage (PAT CAGR > Revenue CAGR).
+- Approximated Con Rule 11's "Net Debt" as gross total_debt_cr, since balancesheet has no cash balance column to net against.
+- Fixed a crash from a malformed year value ("24.5") by making year-parsing fail gracefully and log/exclude bad rows instead of erroring out.
+- Identified 103 non-annual "TTM"/stub-period rows in profitandloss and 5 malformed years in balancesheet — correctly excluded from trend rules rather than misread as fiscal years.
+- Found 38 companies initially failed the "at least 1 pro and 1 con" requirement due to strict thresholds; added documented fallback rules (clearly labeled, lower confidence) that report the most relevant available metric instead of leaving a side empty.
+- Found 2 companies (ATGL, SBIN) with zero financial_ratios history; added a last-resort fallback using roe_percentage/roce_percentage from the companies table.
+- Verified output/pros_cons_generated.csv (551 rows, 92 companies) with the coverage check passing — every company has at least 1 pro and 1 con.
+
+### Day 31 - Cash Flow Intelligence Module
+
+- Found src/analytics/cashflow_kpis.py already existed from Sprint 2 with FCF, CFO Quality, CapEx Intensity, and the 8-pattern capital allocation classifier — extended it with fcf_cagr(), distress_signal(), and deleveraging_flag() rather than rebuilding.
+- Implemented Distress Signal as its own check (CFO<0 AND CFF>0), since it's broader than the existing classifier's DISTRESS label, which also requires CFI<0.
+- Built src/analytics/generate_cashflow_intelligence.py, reconciling the cashflow table's "Mar-13" year format against the "Mar 2013" format used elsewhere.
+- Included ATGL (zero cashflow rows, consistent with Day 30's finding) with null metrics instead of dropping it, to meet the 92-row exit criterion.
+- Generated output/cashflow_intelligence.xlsx (92 rows) and output/distress_alerts.csv (13 companies flagged).
+- Flagged capital_allocation.csv's 100-vs-92 company count discrepancy for investigation on Day 32.

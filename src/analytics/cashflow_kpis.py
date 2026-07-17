@@ -177,3 +177,46 @@ def capital_allocation_pattern(
         return ASSET_LIQUIDATION
 
     return EXTERNAL_FUNDING
+
+
+# ---------------------------------------------------------------------
+# Day 31 additions — Cash Flow Intelligence Module
+# ---------------------------------------------------------------------
+
+def fcf_cagr(fcf_start: float, fcf_end: float, years: int) -> Optional[float]:
+    """
+    Calculate FCF CAGR over the given period.
+
+    Returns None (rather than a misleading number) when the starting or
+    ending FCF is zero/negative, since CAGR is not meaningful in those
+    cases — mirrors the edge-case philosophy of the project's CAGR engine
+    (src/analytics/cagr.py): a negative or zero base/end value doesn't
+    have a sensible compounding rate.
+    """
+    if years <= 0 or fcf_start is None or fcf_end is None:
+        return None
+    if fcf_start <= 0 or fcf_end <= 0:
+        return None
+    return ((fcf_end / fcf_start) ** (1 / years) - 1) * 100
+
+
+def distress_signal(cfo: float, cff: float) -> bool:
+    """
+    True if the company is raising cash from financing while operations
+    are burning cash in the latest year (CFO < 0 AND CFF > 0).
+
+    Note: this is intentionally independent of the CFI sign, unlike the
+    DISTRESS label in capital_allocation_pattern() above, which also
+    requires CFI < 0. A company with CFO < 0, CFI >= 0, CFF > 0 would be
+    labeled EXTERNAL_FUNDING by the 8-pattern classifier but should still
+    trip this broader distress signal.
+    """
+    return cfo < 0 and cff > 0
+
+
+def deleveraging_flag(cff: float, borrowings_declining: bool) -> bool:
+    """
+    True if financing activity is a net cash outflow AND borrowings fell
+    year-over-year (i.e. the company is actively paying down debt).
+    """
+    return cff < 0 and borrowings_declining
