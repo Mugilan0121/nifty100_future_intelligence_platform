@@ -296,3 +296,39 @@ Created `tests/kpi/test_ratios.py` and developed 8 unit tests covering normal ca
 - Included ATGL (zero cashflow rows, consistent with Day 30's finding) with null metrics instead of dropping it, to meet the 92-row exit criterion.
 - Generated output/cashflow_intelligence.xlsx (92 rows) and output/distress_alerts.csv (13 companies flagged).
 - Flagged capital_allocation.csv's 100-vs-92 company count discrepancy for investigation on Day 32.
+
+### Day 32 - Capital Allocation Report
+
+- Investigated the 100-vs-92 company discrepancy flagged on Day 31 and found two separate causes: a ticker typo (AGTL should be ATGL) and 8 companies that have financial data but were never in the companies metadata source at all — confirmed via the raw source file, not a loader bug.
+- Fixed the AGTL→ATGL typo; documented the 8 missing companies as a Sprint 1 scope mismatch rather than retroactively expanding the universe mid-sprint.
+- Verified capital_allocation.csv now covers all 92 known companies with 0 missing.
+- Generated output/capital_allocation_distribution.csv — latest-year pattern counts (REINVESTOR 56, GROWTH_FINANCING 13, DISTRESS 12, SHAREHOLDER_RETURNS 7, ASSET_LIQUIDATION 2, CASH_BURN 1, EXTERNAL_FUNDING 1).
+- Confirmed cashflow_intelligence.xlsx already has the capital_allocation_label column from Day 31 — no rework needed.
+- Generated output/pattern_changes.csv — 431 year-over-year pattern-change events.
+
+### Day 33 - PDF Tearsheet Template
+
+- Built src/reports/tearsheet.py implementing the 2-page company tearsheet using ReportLab: Page 1 — navy header bar with company name/ticker, 6 KPI tiles (ROE, ROCE, NPM, D/E, Revenue CAGR 5yr, FCF) in 2 rows of 3, a 10-year Revenue vs Net Profit bar chart, and a ROE vs ROCE line chart. Page 2 — Balance Sheet composition stacked bar (equity, borrowings, other liabilities), a Cash Flow waterfall for the latest year, a Pros/Cons table, and a color-coded Capital Allocation badge.
+- Used matplotlib to render each chart to a PNG buffer and embedded them as ReportLab Image flowables, since ReportLab has no native charting.
+- Satisfied the WORDWRAP requirement by wrapping all table cell content in Paragraph flowables instead of raw strings, so long company names or pros/cons text wrap within their cell rather than overflowing.
+- Reused the flexible year parser from Days 30-32 to normalize the cashflow table's differing year format for the cash flow waterfall.
+- Pulled pros/cons directly from output/pros_cons_generated.csv (sorted by confidence) and the capital allocation label from output/cashflow_intelligence.xlsx, reusing both Sprint 5 outputs rather than recomputing them.
+- Tested on the 5 spec-named companies across different sectors (TCS, HDFCBANK, RELIANCE, SUNPHARMA, TATASTEEL) — all 5 PDFs generated successfully (112-125 KB each), visually confirmed correct with no text overflow or layout issues.
+
+### Day 34 - Batch Report Generation
+
+- Built src/reports/generate_all_tearsheets.py (batch runner for all 92 companies, reusing Day 33's build_tearsheet()) and src/reports/sector_report.py (10 sector PDFs with median KPI tiles + 8-metric company tables).
+- Confirmed the dataset genuinely has 10 sectors, not the 11 the sprint plan mentioned — not a bug, just an inaccurate plan figure.
+- Caught a serious pre-existing data bug while spot-checking reports: financial_ratios ROE/ROCE values are corrupted for BEL and HAL (thousands of percent instead of ~26-29%), traced to Sprint 2's ratio engine — flagged for the team lead rather than patched retroactively, since it likely also skewed Day 30's pros/cons and earlier screener outputs for these two companies.
+- Added a display-layer sanity guard (values beyond ±200% shown as N/A*, excluded from medians/charts) in both report scripts, and fixed a follow-up TypeError on PNB from a None-vs-NaN dtype issue in that guard.
+- Final result: 89/92 tearsheets generated (3 expected skips — ATGL, JIOFIN, SBIN), all ≥30 KB, and all 10 sector PDFs generated successfully.
+
+shorter version
+
+## Day 35 - Portfolio Summary PDF & Sprint 5 Wrap-Up
+
+- Built src/reports/portfolio_summary.py — one page per company (alphabetical by ticker) with 6 KPI tiles and trend arrows vs. the prior year, reusing formatting functions from tearsheet.py so the Day 34 ROE/ROCE sanity guard carries over automatically.
+- Documented two judgment calls the spec left unspecified: D/E is inverted (a decrease is "improved"), and "flat within 2%" is interpreted per-metric (percentage points for %-scale metrics, relative change for FCF).
+- Generated reports/portfolio/portfolio_summary.pdf — 90 company pages. ATGL/SBIN skipped (no financial data); JIOFIN included here despite being skipped from tearsheets, since this report only needs 1+ year of data vs. tearsheets' 3-year minimum.
+- Wrote docs/sprint5_retro.md and docs/sprint5_summary.md covering the full Day 29-35 arc.
+- Confirmed all Sprint 5 exit criteria met, and flagged the BEL/HAL financial_ratios data bug (found Day 34) for team lead review ahead of sign-off.
