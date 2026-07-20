@@ -332,3 +332,23 @@ shorter version
 - Generated reports/portfolio/portfolio_summary.pdf — 90 company pages. ATGL/SBIN skipped (no financial data); JIOFIN included here despite being skipped from tearsheets, since this report only needs 1+ year of data vs. tearsheets' 3-year minimum.
 - Wrote docs/sprint5_retro.md and docs/sprint5_summary.md covering the full Day 29-35 arc.
 - Confirmed all Sprint 5 exit criteria met, and flagged the BEL/HAL financial_ratios data bug (found Day 34) for team lead review ahead of sign-off.
+
+## Sprint 6 Progress
+
+### Day 36 - KMeans Clustering
+
+- Built src/analytics/clustering.py, clustering all companies into 5 archetypes using return_on_equity_pct, debt_to_equity, revenue_cagr_5yr, fcf_cagr_5yr, and operating_profit_margin_pct, with sector-median imputation for missing values, StandardScaler normalization, and KMeans (k=5, random_state=42).
+- Reused fcf_cagr_5yr from Day 31's output/cashflow_intelligence.xlsx rather than recomputing it, since financial_ratios has no such column.
+- Found the companies table and financial_ratios table define slightly different 92-company universes: ULTRACEMCO and UNIONBANK exist in financial_ratios but not in companies, while ATGL and SBIN are the reverse (zero financial_ratios rows, known since Day 30). Restricted clustering to the companies table as the canonical 92 (matches Gate AC-01) and excluded the former pair rather than expanding the universe mid-sprint, per the Day 32 precedent.
+- Added ATGL and SBIN back into cluster_labels.csv with a "No Data" cluster label rather than dropping them, so all 92 companies appear in the output and Gate AC-15 is satisfied.
+- Generated reports/elbow_plot.png (inertia for k=2 to 10) - the bend around k=5 is present but not razor-sharp, typical for real financial data.
+- Generated output/cluster_labels.csv (92 rows: company_id, cluster_id, cluster_name, distance_from_centroid).
+
+### Day 37 - Cluster Profiling & Statistics
+
+- Discovered the initial clustering was badly distorted by the Day 34 BEL/HAL corrupted-ROE bug (thousands of percent instead of ~26-29%): left uncorrected, the two outliers wrecked StandardScaler's mean/std for the ROE feature and collapsed every other company's scaled ROE toward zero, producing one lopsided 58-company mega-cluster. Applied the same +-200% sanity guard already used in tearsheet.py and sector_report.py before imputation, which fixed the distribution.
+- Profiled all 5 clusters by mean/median of the 5 input features and by inspecting actual company membership. Two of the sprint doc's example names ("Value Cyclicals", "Emerging Growth") didn't match any cluster's real composition, so they were swapped for names that do: Core Compounders, Defensive Dividend Payers, Leveraged Financials, Distressed or Turnaround, High-Quality Compounders.
+- Found KMeans's cluster_id numbering isn't guaranteed identical across scikit-learn versions/machines even with the same random_state - the same code produced a different id-to-group mapping on a different machine. Replaced the static {cluster_id: name} lookup with assign_cluster_names(), which derives each cluster's name from its own computed profile (highest FCF CAGR -> turnaround, highest D/E -> leveraged financials, highest ROE -> high-quality, highest OPM -> defensive, remainder -> core), so naming is correct regardless of numbering.
+- Built src/analytics/correlation_heatmap.py - Pearson correlation of the same 10 core KPIs used by peer.py's RANKING_METRICS, for consistency across the project - and saved an annotated seaborn heatmap to reports/correlation_heatmap.png. Applied the same Day 34 ROE/ROCE guard before computing correlations.
+- Built src/analytics/outlier_detection.py, computing a Z-score for each of the 10 core KPIs within each company's broad_sector (not across the whole market, since a normal D/E for a bank is an outlier for an FMCG company). Flagged 7 genuine outliers (9 metric flags) into output/outlier_report.csv, separate from the BEL/HAL data-bug noise which was excluded rather than flagged.
+- Built src/analytics/portfolio_stats.py, computing P10/P25/P50/P75/P90/Mean/Std for the 10 core KPIs across all 92 companies' latest year, saved to output/portfolio_stats.csv - designed to be reused as-is by the Day 40 GET /api/v1/portfolio/stats endpoint.
