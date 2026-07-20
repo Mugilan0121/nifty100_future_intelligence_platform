@@ -39,16 +39,51 @@ FEATURES = [
     "operating_profit_margin_pct",
 ]
 
-# Descriptive names assigned after profiling on Day 37 review.
-# Placeholder ordering here; adjust once cluster_id -> profile mapping
-# is confirmed against actual company membership.
-CLUSTER_NAMES = {
-    0: "High-Quality Compounders",
-    1: "Defensive Dividend Payers",
-    2: "Value Cyclicals",
-    3: "Distressed or Turnaround",
-    4: "Emerging Growth",
-}
+# Note: names are NOT assigned by a fixed cluster_id -> name lookup.
+# KMeans's cluster_id numbering isn't guaranteed identical across
+# scikit-learn versions/machines even with the same random_state (the
+# internal kmeans++ seeding can differ), so a hardcoded {0: "...", 1:
+# "..."} dict broke when the same code ran on a different machine and
+# produced a different id ordering for the same 5 underlying groups.
+# assign_cluster_names() below looks at each cluster's actual computed
+# profile instead, so naming is correct regardless of numbering.
+def assign_cluster_names(df: pd.DataFrame, cluster_ids: np.ndarray) -> dict:
+    """
+    Map each cluster_id to a descriptive name based on its profile,
+    not its numeric id. Rule order (each step picks from clusters not
+    already named):
+      1. Highest mean fcf_cagr_5yr -> Distressed or Turnaround
+         (a large recovery swing, e.g. CIPLA's Day 37 profile)
+      2. Highest mean debt_to_equity -> Leveraged Financials
+         (high D/E is structurally normal for banks/NBFCs)
+      3. Highest mean return_on_equity_pct -> High-Quality Compounders
+      4. Highest mean operating_profit_margin_pct -> Defensive Dividend Payers
+      5. Whatever's left -> Core Compounders
+    """
+    profile = df.assign(cluster_id=cluster_ids).groupby("cluster_id")[FEATURES].mean()
+    remaining = set(profile.index)
+    names = {}
+
+    turnaround_id = profile.loc[list(remaining), "fcf_cagr_5yr"].idxmax()
+    names[turnaround_id] = "Distressed or Turnaround"
+    remaining.discard(turnaround_id)
+
+    financials_id = profile.loc[list(remaining), "debt_to_equity"].idxmax()
+    names[financials_id] = "Leveraged Financials"
+    remaining.discard(financials_id)
+
+    quality_id = profile.loc[list(remaining), "return_on_equity_pct"].idxmax()
+    names[quality_id] = "High-Quality Compounders"
+    remaining.discard(quality_id)
+
+    defensive_id = profile.loc[list(remaining), "operating_profit_margin_pct"].idxmax()
+    names[defensive_id] = "Defensive Dividend Payers"
+    remaining.discard(defensive_id)
+
+    for cluster_id in remaining:
+        names[cluster_id] = "Core Compounders"
+
+    return names
 
 
 def get_connection() -> sqlite3.Connection:
@@ -153,6 +188,23 @@ def build_feature_frame() -> tuple[pd.DataFrame, pd.DataFrame]:
             "their imputation."
         )
 
+    # Day 34 sanity guard: financial_ratios ROE is corrupted for BEL and
+    # HAL (thousands of percent instead of ~26-29%), traced to Sprint 2's
+    # ratio engine and never patched retroactively. Left uncorrected here,
+    # these two outliers wreck StandardScaler's mean/std for the ROE
+    # feature and collapse everyone else's scaled ROE toward zero.
+    # Treating values beyond +-200% as N/A mirrors the same guard already
+    # used in tearsheet.py and sector_report.py, then letting the normal
+    # sector-median imputation below fill them back in.
+    before = df["return_on_equity_pct"].abs() > 200
+    if before.any():
+        print(
+            f"Applying Day 34 ROE sanity guard: {before.sum()} row(s) "
+            f"beyond +-200% ({df.loc[before, 'company_id'].tolist()}) "
+            "set to NaN before imputation."
+        )
+        df.loc[before, "return_on_equity_pct"] = np.nan
+
     for feature in FEATURES:
         sector_median = df.groupby("broad_sector")[feature].transform("median")
         overall_median = df[feature].median()
@@ -211,7 +263,8 @@ def run_clustering(df: pd.DataFrame) -> pd.DataFrame:
 
     result_df = df[["company_id"]].copy()
     result_df["cluster_id"] = cluster_ids
-    result_df["cluster_name"] = result_df["cluster_id"].map(CLUSTER_NAMES)
+    cluster_names = assign_cluster_names(df, cluster_ids)
+    result_df["cluster_name"] = result_df["cluster_id"].map(cluster_names)
     result_df["distance_from_centroid"] = np.round(distance_from_centroid, 4)
 
     return result_df
