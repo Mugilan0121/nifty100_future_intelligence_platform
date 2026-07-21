@@ -52,6 +52,21 @@ def normalize_year(value: str) -> str:
 
     text = text.replace(" ", "-")
 
+    # Abbreviated month + 4-digit year (e.g. "Mar-2015", from "Mar 2015"
+    # after the space->dash replacement above). This is the format used
+    # by most rows in profitandloss and balancesheet - previously
+    # unhandled, causing every profitandloss year and most
+    # balancesheet/cashflow years to return PARSE_ERROR.
+    match = re.match(
+        r"^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{4})$",
+        text,
+        re.IGNORECASE,
+    )
+    if match:
+        month = MONTH_MAP[match.group(1).upper()]
+        year = match.group(2)
+        return f"{year}-{month}"
+
     match = re.match(
         r"^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{2})$",
         text,
