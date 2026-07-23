@@ -360,3 +360,86 @@ shorter version
 - Created src/api/routers/ with one file per module: companies.py, screener.py, sectors.py, peers.py, valuation.py, portfolio.py, documents.py, health.py - all mounted under prefix /api/v1 in main.py. Only health.py has real endpoints so far; the other 6 are scaffolded stubs, filled in on Day 39/40.
 - Implemented GET /api/v1/health, returning status=ok, db_row_counts, uptime_seconds, and version. db_row_counts covers 10 core company-data tables (companies, sectors, profitandloss, balancesheet, cashflow, financial_ratios, market_cap, documents, prosandcons, peer_groups) - the db actually has 13 tables total, so stock_prices, analysis, peer_percentiles, and sqlite_sequence were excluded as auxiliary/derived rather than part of the core per-company data model. Flagged for team lead review if a different set of 10 was intended.
 - Verified: uvicorn src.api.main:app --port 8000 starts without error, /docs shows the OpenAPI page, and GET /api/v1/health returns HTTP 200 with correct row counts (companies=92, sectors=92, profitandloss=1276, balancesheet=1312, cashflow=1187, financial_ratios=1184, market_cap=552, documents=1585, prosandcons=16, peer_groups=56).
+
+### Day 39 — API Endpoints: Company Data
+
+Implemented the 7 company-data FastAPI endpoints.
+
+**Endpoints added:**
+- `GET /api/v1/companies` — all 92 companies with id, company_name, broad_sector, sub_sector, roe_pct, roce_pct; filterable by sector, market_cap_category, search (partial name/ticker)
+- `GET /api/v1/companies/{ticker}` — full company profile: companies fields + sector data + latest year's financial ratios; 404 on unknown ticker
+- `GET /api/v1/companies/{ticker}/pl` — P&L history; optional `from_year`/`to_year` range filter (YYYY-MM)
+- `GET /api/v1/companies/{ticker}/bs` — balance sheet history; same year-range filter
+- `GET /api/v1/companies/{ticker}/cashflow` — cash flow history; same year-range filter
+- `GET /api/v1/companies/{ticker}/ratios` — all computed KPIs per year, or a single year if `year` param given
+- `GET /api/v1/companies/{ticker}/tearsheet` — pre-generated tearsheet PDF as binary download
+
+**Architecture:**
+- Established the shared data-access pattern for the rest of Sprint 6: routers in `src/api/routers/` stay thin (validation + HTTP concerns only), all SQL and business logic lives in `src/api/db.py`
+- `db.normalize_ticker()` — normalizes ticker input (strip + uppercase); `companies.id` serves as the ticker, there is no separate ticker column
+- `db.company_exists()` — shared existence check used across all ticker-scoped endpoints for consistent 404 behavior
+- `db._rows_with_normalized_year()` / `_filter_year_range()` — shared helpers reused across pl/bs/cashflow/ratios to normalize mixed year formats and apply YYYY-MM range filters
+- `db.get_tearsheet_path()` — resolves pre-generated PDF path from `reports/tearsheets/`, returns None if missing (→ 404)
+
+**Verification:** All 7 endpoints manually tested via curl — 200 OK on valid tickers, 404 with correct error body on unknown ticker, tearsheet download confirmed as valid PDF content-type.
+
+### Day 40 — API Endpoints: Screener, Sectors, Peers & Remaining
+
+Implemented the remaining 8 FastAPI endpoints, bringing the API to full coverage per the sprint plan.
+
+**Endpoints added:**
+- `GET /api/v1/screener` — filter companies by ROE, D/E, FCF, sector, revenue/PAT CAGR, and P/E; returns ranked results
+- `GET /api/v1/sectors` — all 10 distinct sectors with company count, median ROE, median P/E, median D/E
+- `GET /api/v1/sectors/{sector}/companies` — companies in a sector with latest-year KPIs; 404 on unknown sector
+- `GET /api/v1/peers/{group_name}` — peer group members with percentile rank per metric; 404 on unknown group
+- `GET /api/v1/companies/{ticker}/peers/compare` — radar data: company vs. peer group average vs. benchmark company
+- `GET /api/v1/market-cap/{ticker}` — historical P/E, P/B, EV/EBITDA, dividend yield (2019–2024) from the `market_cap` table
+- `GET /api/v1/portfolio/stats` — P10–P90 percentile table across 10 core KPIs, all 92 companies
+- `GET /api/v1/companies/{ticker}/documents` — annual report links with a computed `is_url_valid` flag
+
+**Architecture:**
+- All new endpoints follow the Day 39 pattern: thin routers in `src/api/routers/` delegate to shared data-access functions in `src/api/db.py` (no inline SQL in routers)
+- Added `screen_companies()`, `get_sectors_list()`, `get_sector_companies()`, `get_peer_group_data()`, `get_peer_radar()`, `get_market_cap_history()`, `get_portfolio_stats()`, `get_company_documents()` to `db.py`
+
+**Schema corrections discovered during implementation:**
+- Sector data (`broad_sector`, `sub_sector`) lives in a separate `sectors` table joined on `company_id`, not in `companies`
+- Valuation multiples (`pe_ratio`, `pb_ratio`, `ev_ebitda`, `dividend_yield_pct`) live in `market_cap`, not `financial_ratios`
+- `companies.id` serves as the ticker — there is no separate `ticker` column
+- `documents` table has no `is_url_valid` column; computed at the API layer instead
+
+**Known issue flagged for review:**
+- Corrupted BEL/HAL ROE values (thousands-of-percent, per existing Sprint 2 flag) surface unguarded in `/api/v1/screener` results, ranking top of any ROE-sorted query. The ±200% sanity guard currently applies only at the company-profile display layer, not in the screener. Decision pending: extend the guard to screener results, or leave as-is per existing "flag, don't silently patch" policy.
+
+**Verification:** All 8 endpoints manually tested via curl — 200 OK on valid requests, 404 with correct error body on invalid ticker/sector/peer group, response times 2–260ms.
+
+### Day 41 — ETL & KPI Unit Tests
+
+**Sprint 6 | Epics 10–12**
+
+Added/verified unit tests across ETL, KPI, and DQ layers.
+
+- `tests/etl/test_normaliser.py` (40 tests) — `normalize_year()` and `normalize_ticker()`, all year-format variants + edge cases
+- `tests/etl/test_loader.py` (15 tests) — Excel loader row/column counts, header-row selection, ticker/year normalization
+- `tests/kpi/` (66 tests across 5 files) — ratios, CAGR, cashflow KPIs, composite quality score, ratio pipeline integration
+- `tests/dq/test_rules.py` (18 tests) — all 16 DQ rules in `validator.py`, one violation case each
+
+**Result:** `pytest tests/etl/ tests/kpi/ tests/dq/ -v` → **137 passed, 0 failures**
+
+**Note:** Validator implements 16 DQ rules (DQ-01–16), not the 14 in the original spec — flagged for Day 45 checklist.
+
+### Day 42 — API Tests & Integration
+
+Built out the API test suite using FastAPI's `TestClient`.
+
+- `tests/conftest.py` — shared `client` fixture
+- `tests/api/test_health.py` (6 tests) — status, db_row_counts, uptime, version
+- `tests/api/test_companies.py` (9 tests) — list/filter/search, 92-company count, ticker lookup, 404 handling
+- `tests/api/test_screener.py` (6 tests) — ROE/D-E/sector filters, 400 on invalid params
+- `tests/api/test_sectors.py` (4 tests) — sector list, drill-down, 404 on unknown sector
+- `tests/api/test_integration.py` (1 test) — confirms dashboard and API agree on ROE-filtered screener results
+
+**Result:** `pytest tests/ --html=reports/pytest_report.html -v` → **163 passed, 0 failures** (well past the 60-test target)
+
+**Note:** Dashboard screener applies a D/E carve-out for Financials-sector companies and includes an ICR filter; the API screener does neither. Flagged for review ahead of Gate AC-13 (Day 45), which compares API screener output to `screener_output.xlsx`.
+
+**Also confirmed:** sector count is 10 (not 11 per original spec) — tests assert the verified real value.

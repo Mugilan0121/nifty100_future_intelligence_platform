@@ -1,12 +1,15 @@
-"""
-Valuation endpoints.
-
-Sprint 6 - Day 39/40 (scaffolded Day 38, endpoints added later this sprint).
-"""
-
-from fastapi import APIRouter
+"""Valuation endpoints. Sprint 6 - Day 40"""
+from fastapi import APIRouter, HTTPException
+from src.api import db
 
 router = APIRouter(tags=["valuation"])
 
-# Endpoints added on Day 39 (companies) / Day 40 (screener, sectors,
-# peers, valuation, portfolio, documents).
+
+@router.get("/market-cap/{ticker}")
+def market_cap_history(ticker: str) -> dict:
+    """Historical valuation multiples (P/E, P/B, EV/EBITDA, dividend yield), 2019-2024."""
+    ticker = db.normalize_ticker(ticker)
+    with db.get_connection() as conn:
+        if not db.company_exists(conn, ticker):
+            raise HTTPException(status_code=404, detail=f"Company '{ticker}' not found")
+    return {"ticker": ticker, "history": db.get_market_cap_history(ticker)}
