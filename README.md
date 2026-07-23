@@ -414,8 +414,6 @@ Implemented the remaining 8 FastAPI endpoints, bringing the API to full coverage
 
 ### Day 41 — ETL & KPI Unit Tests
 
-**Sprint 6 | Epics 10–12**
-
 Added/verified unit tests across ETL, KPI, and DQ layers.
 
 - `tests/etl/test_normaliser.py` (40 tests) — `normalize_year()` and `normalize_ticker()`, all year-format variants + edge cases
