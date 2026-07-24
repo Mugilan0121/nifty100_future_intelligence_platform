@@ -29,6 +29,7 @@ OUTPUT_DIR = PROJECT_ROOT / "output"
 
 
 def get_connection() -> sqlite3.Connection:
+    """Returns a SQLite connection to the project database."""
     if not DB_PATH.exists():
         raise FileNotFoundError(f"Database not found at {DB_PATH}")
     return sqlite3.connect(DB_PATH)
@@ -51,6 +52,7 @@ def year_num_flexible(y):
 
 
 def load_data(conn):
+    """Loads cash flow and financial ratio data needed for cashflow intelligence metrics."""
     cashflow = pd.read_sql_query("SELECT * FROM cashflow", conn)
     pl = pd.read_sql_query("SELECT company_id, year, sales, net_profit, operating_profit FROM profitandloss", conn)
     bs = pd.read_sql_query("SELECT company_id, year, borrowings FROM balancesheet", conn)
@@ -67,6 +69,7 @@ def load_data(conn):
 
 
 def main():
+    """Computes cashflow intelligence KPIs for all companies and writes them to the database."""
     OUTPUT_DIR.mkdir(exist_ok=True)
     conn = get_connection()
     cashflow, pl, bs, sectors, companies = load_data(conn)

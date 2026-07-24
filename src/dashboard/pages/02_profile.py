@@ -90,14 +90,17 @@ latest = ratios_history.sort_values("year").iloc[-1]
 k1, k2, k3, k4, k5, k6 = st.columns(6)
 
 def fmt_pct(value):
+    """Formats a value as a percentage string, or 'N/A' if missing."""
     return f"{value:.1f}%" if value == value else "N/A"
 
 def fmt_ratio(value):
+    """Formats a ratio value, labeling zero as 'Debt Free', or 'N/A' if missing."""
     if value != value:
         return "N/A"
     return "Debt Free" if value == 0 else f"{value:.2f}"
 
 def fmt_cr(value):
+    """Formats a value as Indian rupees in crores, or 'N/A' if missing."""
     return f"₹{value:,.0f} Cr" if value == value else "N/A"
 
 k1.metric("ROE", fmt_pct(latest["return_on_equity_pct"]))

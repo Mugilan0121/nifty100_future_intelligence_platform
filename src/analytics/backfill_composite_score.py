@@ -26,6 +26,7 @@ DATABASE_PATH = PROJECT_ROOT / "nifty100.db"
 
 
 def add_score_columns_if_missing(conn: sqlite3.Connection) -> None:
+    """Adds composite_quality_score and sector_relative_score columns to financial_ratios if missing."""
     existing_cols = [
         row[1] for row in conn.execute("PRAGMA table_info(financial_ratios)").fetchall()
     ]
@@ -36,6 +37,7 @@ def add_score_columns_if_missing(conn: sqlite3.Connection) -> None:
 
 
 def backfill() -> None:
+    """Backfills composite quality scores into financial_ratios for all companies."""
     df = load_financial_ratios()
     df = calculate_composite_score(df)
     df = calculate_sector_relative_score(df)

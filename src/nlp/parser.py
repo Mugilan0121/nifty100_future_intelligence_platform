@@ -38,6 +38,7 @@ PATTERN = re.compile(r"(\d+)\s*Years?:?\s*(-?[\d.]+)\s*%")
 
 
 def get_connection() -> sqlite3.Connection:
+    """Returns a SQLite connection to the project database."""
     if not DB_PATH.exists():
         raise FileNotFoundError(f"Database not found at {DB_PATH}")
     return sqlite3.connect(DB_PATH)
@@ -148,6 +149,7 @@ def cross_validate_cagr(parsed_df: pd.DataFrame, conn: sqlite3.Connection) -> pd
 
 
 def main():
+    """Runs the NLP regex parser against company data and writes parsed output."""
     OUTPUT_DIR.mkdir(exist_ok=True)
     conn = get_connection()
 

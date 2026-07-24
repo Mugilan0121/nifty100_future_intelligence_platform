@@ -24,12 +24,14 @@ OUTPUT_DIR = PROJECT_ROOT / "output"
 
 
 def get_connection() -> sqlite3.Connection:
+    """Returns a SQLite connection to the project database."""
     if not DB_PATH.exists():
         raise FileNotFoundError(f"Database not found at {DB_PATH}")
     return sqlite3.connect(DB_PATH)
 
 
 def year_num_flexible(y):
+    """Parses a year value in any known format into a sortable numeric form."""
     s = str(y).strip()
     m = re.search(r"(\d{4})$", s)
     if m:
@@ -41,6 +43,7 @@ def year_num_flexible(y):
 
 
 def main():
+    """Computes capital allocation patterns for all companies and writes the output CSV."""
     conn = get_connection()
     companies = pd.read_sql_query("SELECT id AS company_id FROM companies", conn)
     conn.close()

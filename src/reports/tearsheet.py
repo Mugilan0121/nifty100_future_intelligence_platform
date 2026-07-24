@@ -52,12 +52,14 @@ badge_style = ParagraphStyle("badge", parent=styles["Normal"], fontSize=11, text
 
 
 def get_connection() -> sqlite3.Connection:
+    """Returns a SQLite connection to the project database."""
     if not DB_PATH.exists():
         raise FileNotFoundError(f"Database not found at {DB_PATH}")
     return sqlite3.connect(DB_PATH)
 
 
 def year_num_flexible(y):
+    """Parses a year value in any known format into a sortable numeric form."""
     s = str(y).strip()
     m = re.search(r"(\d{4})$", s)
     if m:
@@ -73,6 +75,7 @@ def year_num_flexible(y):
 # ---------------------------------------------------------------------
 
 def load_company_data(conn, ticker: str):
+    """Loads all data needed to build a company's tearsheet."""
     company = pd.read_sql_query(
         "SELECT c.*, s.broad_sector, s.sub_sector FROM companies c "
         "LEFT JOIN sectors s ON c.id = s.company_id WHERE c.id = ?",
@@ -103,6 +106,7 @@ def load_company_data(conn, ticker: str):
 
 
 def load_pros_cons(ticker: str):
+    """Loads recorded pros and cons for a company."""
     path = OUTPUT_DIR / "pros_cons_generated.csv"
     if not path.exists():
         return [], []
@@ -114,6 +118,7 @@ def load_pros_cons(ticker: str):
 
 
 def load_capital_allocation_label(ticker: str):
+    """Loads the capital allocation pattern label for a company."""
     path = OUTPUT_DIR / "cashflow_intelligence.xlsx"
     if not path.exists():
         return None
@@ -138,6 +143,7 @@ def _fig_to_image(fig, width=170 * mm, height=70 * mm):
 
 
 def chart_revenue_net_profit(pl: pd.DataFrame):
+    """Builds the revenue vs net profit chart for the tearsheet."""
     recent = pl.tail(10)
     fig, ax = plt.subplots(figsize=(6.2, 2.6))
     x = range(len(recent))
@@ -154,6 +160,7 @@ def chart_revenue_net_profit(pl: pd.DataFrame):
 
 
 def chart_roe_roce(ratios: pd.DataFrame):
+    """Builds the ROE vs ROCE trend chart for the tearsheet."""
     recent = ratios.tail(10).copy()
     # Coerce to numeric first — some rows (e.g. PNB) have a raw None rather
     # than NaN, which makes the column object-dtype and breaks .abs().
@@ -176,6 +183,7 @@ def chart_roe_roce(ratios: pd.DataFrame):
 
 
 def chart_balance_sheet_composition(bs: pd.DataFrame):
+    """Builds the balance sheet composition chart for the tearsheet."""
     recent = bs.tail(10).copy()
     recent["equity"] = recent["equity_capital"].fillna(0) + recent["reserves"].fillna(0)
     fig, ax = plt.subplots(figsize=(6.2, 2.6))
@@ -191,6 +199,7 @@ def chart_balance_sheet_composition(bs: pd.DataFrame):
 
 
 def chart_cashflow_waterfall(cf: pd.DataFrame):
+    """Builds the cash flow waterfall chart for the tearsheet."""
     if cf.empty:
         fig, ax = plt.subplots(figsize=(6.2, 2.6))
         ax.text(0.5, 0.5, "No cash flow data available", ha="center", va="center", fontsize=9)
@@ -236,16 +245,19 @@ def fmt_pct(v):
 
 
 def fmt_ratio(v):
+    """Formats a ratio value, labeling zero as 'Debt Free', or 'N/A' if missing."""
     if pd.isna(v):
         return "N/A"
     return "Debt Free" if v == 0 else f"{v:.2f}"
 
 
 def fmt_cr(v):
+    """Formats a value as Indian rupees in crores, or 'N/A' if missing."""
     return f"\u20b9{v:,.0f} Cr" if pd.notna(v) else "N/A"
 
 
 def build_kpi_table(latest_ratios):
+    """Builds the KPI summary table flowable for the tearsheet."""
     kpis = [
         ("ROE", fmt_pct(latest_ratios.get("return_on_equity_pct"))),
         ("ROCE", fmt_pct(latest_ratios.get("return_on_capital_employed_pct"))),
@@ -278,6 +290,7 @@ def build_kpi_table(latest_ratios):
 
 
 def build_header(company_name, ticker, sector):
+    """Builds the company header section flowable for the tearsheet."""
     header_table = Table(
         [[Paragraph(f"{company_name}", header_style)],
          [Paragraph(f"{ticker} \u00b7 {sector or 'N/A'}", subheader_style)]],
@@ -293,6 +306,7 @@ def build_header(company_name, ticker, sector):
 
 
 def build_pros_cons_table(pros, cons, max_items=6):
+    """Builds the pros and cons table flowable for the tearsheet."""
     pro_paras = [Paragraph(f"\u2713 {p}", pro_style) for p in pros[:max_items]] or [Paragraph("No pros recorded.", pro_style)]
     con_paras = [Paragraph(f"\u2717 {c}", con_style) for c in cons[:max_items]] or [Paragraph("No cons recorded.", con_style)]
 
@@ -314,6 +328,7 @@ def build_pros_cons_table(pros, cons, max_items=6):
 
 
 def build_capital_allocation_badge(label):
+    """Builds the capital allocation pattern badge flowable for the tearsheet."""
     label_display = (label or "N/A").replace("_", " ").title()
     badge_color = {
         "Reinvestor": colors.HexColor("#1e7d32"),

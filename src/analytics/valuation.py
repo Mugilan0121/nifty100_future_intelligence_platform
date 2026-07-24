@@ -193,12 +193,14 @@ def build_valuation_summary() -> pd.DataFrame:
 # ---------------------------------------------------------------------
 
 def export_valuation_summary(summary: pd.DataFrame) -> None:
+    """Exports the valuation summary to valuation_summary.xlsx."""
     OUTPUT_SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
     summary.to_excel(OUTPUT_SUMMARY_PATH, index=False)
     logger.info("Exported valuation summary: %s", OUTPUT_SUMMARY_PATH)
 
 
 def export_valuation_flags(summary: pd.DataFrame) -> None:
+    """Exports valuation flag data to valuation_flags.csv."""
     flagged = summary[summary["flag"].isin(["Caution", "Discount"])].copy()
     flagged = flagged.sort_values("pe_vs_sector_median_pct", ascending=False)
     OUTPUT_FLAGS_PATH.parent.mkdir(parents=True, exist_ok=True)

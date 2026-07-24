@@ -15,6 +15,7 @@ DB_PATH = PROJECT_ROOT / "nifty100.db"
 
 
 def get_connection() -> sqlite3.Connection:
+    """Returns a SQLite connection to the project database with row factory enabled."""
     if not DB_PATH.exists():
         raise FileNotFoundError(
             f"Database not found at {DB_PATH}. Run `python src/etl/loader.py` first."
@@ -54,10 +55,12 @@ def get_table_row_counts() -> dict[str, int]:
 
 
 def normalize_ticker(ticker: str) -> str:
+    """Normalizes a ticker string to uppercase with surrounding whitespace stripped."""
     return ticker.strip().upper() if ticker else ""
 
 
 def company_exists(conn: sqlite3.Connection, ticker: str) -> bool:
+    """Returns True if the given ticker exists in the companies table."""
     cur = conn.execute("SELECT 1 FROM companies WHERE id = ?", (ticker,))
     return cur.fetchone() is not None
 
@@ -253,6 +256,7 @@ def _percentiles(values: list[float]) -> dict | None:
     n = len(series)
 
     def pct(p):
+        """Returns the value at the given percentile from a pre-sorted list."""
         idx = min(n - 1, int(round(p / 100 * (n - 1))))
         return series[idx]
 
@@ -264,6 +268,7 @@ def _percentiles(values: list[float]) -> dict | None:
 
 
 def sector_exists(sector: str) -> bool:
+    """Returns True if the given sector name exists in the sectors table."""
     with get_connection() as conn:
         cur = conn.execute("SELECT 1 FROM sectors WHERE broad_sector = ?", (sector,))
         return cur.fetchone() is not None
@@ -382,6 +387,7 @@ def screen_companies(
 
 
 def peer_group_exists(group_name: str) -> bool:
+    """Returns True if the given peer group name exists in the peer_groups table."""
     with get_connection() as conn:
         cur = conn.execute("SELECT 1 FROM peer_groups WHERE peer_group_name = ?", (group_name,))
         return cur.fetchone() is not None

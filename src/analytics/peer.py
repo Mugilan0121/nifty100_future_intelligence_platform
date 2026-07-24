@@ -401,6 +401,7 @@ MEDIAN_FILL = PatternFill(
 
 def export_peer_comparison(peer_reports):
 
+    """Exports peer group comparison data to CSV."""
     OUTPUT_PATH.parent.mkdir(
         parents=True,
         exist_ok=True,
@@ -524,6 +525,7 @@ def export_peer_comparison(peer_reports):
 
 def main():
 
+    """Computes peer percentile rankings for all peer groups and writes them to the database."""
     conn = sqlite3.connect(DATABASE_PATH)
 
     create_peer_percentiles_table(conn)

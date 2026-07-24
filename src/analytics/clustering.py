@@ -87,6 +87,7 @@ def assign_cluster_names(df: pd.DataFrame, cluster_ids: np.ndarray) -> dict:
 
 
 def get_connection() -> sqlite3.Connection:
+    """Returns a SQLite connection to the project database."""
     if not DATABASE_PATH.exists():
         raise FileNotFoundError(f"Database not found: {DATABASE_PATH}")
     return sqlite3.connect(DATABASE_PATH)
@@ -271,6 +272,7 @@ def run_clustering(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> None:
+    """Runs KMeans clustering end-to-end and writes cluster_labels.csv."""
     df, all_companies = build_feature_frame()
 
     n_clusterable = len(df)

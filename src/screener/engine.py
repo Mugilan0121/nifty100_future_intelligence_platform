@@ -592,6 +592,7 @@ def export_screener_output(
 
 def apply_excel_formatting(writer, preset_name, worksheet):
 
+    """Applies column widths, header styling, and conditional formatting to the exported Excel output."""
     config = load_screener_config()
 
     preset = config["presets"][preset_name]

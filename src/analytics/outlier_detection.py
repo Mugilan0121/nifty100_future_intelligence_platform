@@ -37,6 +37,7 @@ KPIS = [
 
 
 def get_connection() -> sqlite3.Connection:
+    """Returns a SQLite connection to the project database."""
     if not DATABASE_PATH.exists():
         raise FileNotFoundError(f"Database not found: {DATABASE_PATH}")
     return sqlite3.connect(DATABASE_PATH)
@@ -141,6 +142,7 @@ def flag_outliers(z_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> None:
+    """Runs Z-score outlier detection across all KPIs and writes outlier_report.csv."""
     df = load_latest_kpis_with_sector()
     df = apply_roe_sanity_guard(df)
 

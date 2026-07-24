@@ -40,6 +40,7 @@ CONFIDENCE_THRESHOLD = 60
 
 
 def get_connection() -> sqlite3.Connection:
+    """Returns a SQLite connection to the project database."""
     if not DB_PATH.exists():
         raise FileNotFoundError(f"Database not found at {DB_PATH}")
     return sqlite3.connect(DB_PATH)
@@ -77,6 +78,7 @@ def confidence_from_margin(value, threshold, direction="above", streak_extra=0):
 # ---------------------------------------------------------------------
 
 def load_data(conn):
+    """Loads the financial data needed to evaluate pros/cons rules."""
     ratios = pd.read_sql_query("SELECT * FROM financial_ratios", conn)
     bs = pd.read_sql_query("SELECT * FROM balancesheet", conn)
     pl = pd.read_sql_query("SELECT * FROM profitandloss", conn)
@@ -104,6 +106,7 @@ def load_data(conn):
 # ---------------------------------------------------------------------
 
 def evaluate_rules(company_id, ratios_hist, bs_hist, pl_hist, sector, div_yield_latest):
+    """Evaluates all pros/cons rules against a company's data and returns matching statements."""
     results = []
 
     if ratios_hist.empty:
@@ -114,6 +117,7 @@ def evaluate_rules(company_id, ratios_hist, bs_hist, pl_hist, sector, div_yield_
     bs_latest = bs_hist.iloc[-1] if not bs_hist.empty else None
 
     def add(rule_id, rule_type, triggered, confidence, text):
+        """Adds a pros or cons statement with its confidence score to the results list."""
         if triggered and confidence > CONFIDENCE_THRESHOLD:
             results.append(
                 {
@@ -351,6 +355,7 @@ def fallback_con(latest):
 
 
 def apply_fallbacks(company_id, company_results, latest):
+    """Applies fallback pros/cons statements when a company has fewer than the minimum required."""
     has_pro = any(r["type"] == "pro" for r in company_results)
     has_con = any(r["type"] == "con" for r in company_results)
 
@@ -378,6 +383,7 @@ def apply_fallbacks(company_id, company_results, latest):
 # ---------------------------------------------------------------------
 
 def main():
+    """Generates pros and cons for all companies and writes them to the database."""
     OUTPUT_DIR.mkdir(exist_ok=True)
     conn = get_connection()
     ratios, bs, pl, sectors, market_cap, companies = load_data(conn)

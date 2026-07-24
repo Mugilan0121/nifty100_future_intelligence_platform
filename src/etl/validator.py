@@ -17,6 +17,7 @@ class Validator:
         issue,
         severity,
     ):
+        """Records a single data quality failure with company, year, field, issue, and severity."""
         self.failures.append(
             {
                 "company_id": company_id,
@@ -28,6 +29,7 @@ class Validator:
         )
 
     def save_failures(self, output_path):
+        """Writes all recorded failures to a CSV file and returns them as a DataFrame."""
         df = pd.DataFrame(self.failures)
 
         output_path = Path(output_path)
@@ -44,6 +46,7 @@ class Validator:
         df,
         company_col="id"
     ):
+        """Flags duplicate company primary keys (DQ-01)."""
         duplicates = df[
             df.duplicated(
                 subset=[company_col],
@@ -68,6 +71,7 @@ class Validator:
         company_col="company_id",
         year_col="year"
     ):
+        """Flags duplicate company/year primary keys (DQ-02)."""
         duplicates = df[
             df.duplicated(
                 subset=[company_col, year_col],
@@ -92,6 +96,7 @@ class Validator:
         companies_df,
         company_col="company_id"
     ):
+        """Flags rows referencing a company_id not present in the companies table (DQ-03)."""
         valid_ids = set(
             companies_df["id"].astype(str)
         )
@@ -116,6 +121,7 @@ class Validator:
         self,
         df
     ):
+        """Flags balance sheet rows where assets and liabilities differ by 1% or more (DQ-04)."""
         for _, row in df.iterrows():
 
             total_assets = row["total_assets"]
@@ -150,6 +156,7 @@ class Validator:
         operating_profit_col="operating_profit",
         opm_col="opm_percentage"
     ):
+        """Flags rows where reported OPM diverges from calculated OPM by more than 1 point (DQ-05)."""
         for _, row in df.iterrows():
 
             sales = row[sales_col]
@@ -183,6 +190,7 @@ class Validator:
         df,
         sales_col="sales"
     ):
+        """Flags rows with non-positive sales (DQ-06)."""
         for _, row in df.iterrows():
 
             sales = row[sales_col]
@@ -207,6 +215,7 @@ class Validator:
         df,
         year_col="year"
     ):
+        """Flags rows whose year value isn't in YYYY-MM format (DQ-07)."""
         pattern = r"^\d{4}-\d{2}$"
 
         for _, row in df.iterrows():
@@ -230,6 +239,7 @@ class Validator:
         df,
         company_col="company_id"
     ):
+        """Flags tickers outside the expected 2-12 character length (DQ-08)."""
         for _, row in df.iterrows():
 
             ticker = str(row[company_col])
@@ -254,6 +264,7 @@ class Validator:
         financing_col="financing_activity",
         net_cash_col="net_cash_flow"
     ):
+        """Flags rows where net cash flow doesn't match operating+investing+financing within tolerance (DQ-09)."""
         for _, row in df.iterrows():
 
             operating = row[operating_col]
@@ -296,6 +307,7 @@ class Validator:
         df,
         fixed_assets_col="fixed_assets"
     ):
+        """Flags rows with negative fixed assets (DQ-10)."""
         for _, row in df.iterrows():
 
             fixed_assets = row[fixed_assets_col]
@@ -320,6 +332,7 @@ class Validator:
         df,
         tax_col="tax_percentage"
     ):
+        """Flags rows with a tax rate outside the 0-60% range (DQ-11)."""
         for _, row in df.iterrows():
 
             tax_rate = row[tax_col]
@@ -344,6 +357,7 @@ class Validator:
         df,
         payout_col="dividend_payout"
     ):
+        """Flags rows with a dividend payout ratio above 200% (DQ-12)."""
         for _, row in df.iterrows():
 
             payout = row[payout_col]
@@ -368,6 +382,7 @@ class Validator:
         df,
         url_col="annual_report"
     ):
+        """Flags annual report URLs that don't start with http:// or https:// (DQ-13)."""
         for _, row in df.iterrows():
 
             url = str(row[url_col])
@@ -396,6 +411,7 @@ class Validator:
         net_profit_col="net_profit",
         eps_col="eps"
     ):
+        """Flags rows with positive net profit but non-positive EPS (DQ-14)."""
         for _, row in df.iterrows():
 
             net_profit = row[net_profit_col]
@@ -420,6 +436,7 @@ class Validator:
         self,
         df
     ):
+        """Flags rows where total assets and total liabilities aren't exactly equal (DQ-15)."""
         for _, row in df.iterrows():
 
             total_assets = row["total_assets"]
@@ -446,6 +463,7 @@ class Validator:
         annual_df,
         company_col="company_id"
     ):
+        """Flags companies present in companies but missing from the annual dataset (DQ-16)."""
         annual_companies = set(
             annual_df[company_col].astype(str)
         )

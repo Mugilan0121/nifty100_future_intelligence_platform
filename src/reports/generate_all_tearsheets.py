@@ -18,6 +18,7 @@ OUTPUT_DIR = PROJECT_ROOT / "output"
 
 
 def main():
+    """Generates a tearsheet PDF for every company in the database."""
     TEARSHEETS_DIR.mkdir(parents=True, exist_ok=True)
 
     conn = get_connection()

@@ -20,6 +20,7 @@ DB_PATH = PROJECT_ROOT / "nifty100.db"
 
 
 def get_connection() -> sqlite3.Connection:
+    """Returns a SQLite connection to the project database."""
     if not DB_PATH.exists():
         raise FileNotFoundError(
             f"Database not found at {DB_PATH}. Run `python src/etl/loader.py` first."
@@ -195,6 +196,7 @@ def get_latest_ratios() -> pd.DataFrame:
 
 @st.cache_data(ttl=600)
 def get_pl(ticker: str) -> pd.DataFrame:
+    """Returns profit & loss history for a company."""
     query = "SELECT * FROM profitandloss WHERE company_id = ? ORDER BY year"
     with get_connection() as conn:
         return pd.read_sql_query(query, conn, params=[ticker.strip().upper()])
@@ -202,6 +204,7 @@ def get_pl(ticker: str) -> pd.DataFrame:
 
 @st.cache_data(ttl=600)
 def get_bs(ticker: str) -> pd.DataFrame:
+    """Returns balance sheet history for a company."""
     query = "SELECT * FROM balancesheet WHERE company_id = ? ORDER BY year"
     with get_connection() as conn:
         return pd.read_sql_query(query, conn, params=[ticker.strip().upper()])
@@ -209,6 +212,7 @@ def get_bs(ticker: str) -> pd.DataFrame:
 
 @st.cache_data(ttl=600)
 def get_cf(ticker: str) -> pd.DataFrame:
+    """Returns cash flow history for a company."""
     query = "SELECT * FROM cashflow WHERE company_id = ? ORDER BY year"
     with get_connection() as conn:
         return pd.read_sql_query(query, conn, params=[ticker.strip().upper()])
@@ -216,6 +220,7 @@ def get_cf(ticker: str) -> pd.DataFrame:
 
 @st.cache_data(ttl=600)
 def get_prosandcons(ticker: str) -> pd.DataFrame:
+    """Returns recorded pros and cons for a company."""
     query = "SELECT * FROM prosandcons WHERE company_id = ?"
     with get_connection() as conn:
         return pd.read_sql_query(query, conn, params=[ticker.strip().upper()])
@@ -223,6 +228,7 @@ def get_prosandcons(ticker: str) -> pd.DataFrame:
 
 @st.cache_data(ttl=600)
 def get_documents(ticker: str) -> pd.DataFrame:
+    """Returns annual report document links for a company."""
     query = "SELECT * FROM documents WHERE company_id = ? ORDER BY Year DESC"
     with get_connection() as conn:
         return pd.read_sql_query(query, conn, params=[ticker.strip().upper()])
@@ -313,6 +319,7 @@ def get_capital_allocation(year: str | None = None) -> pd.DataFrame:
 
 @st.cache_data(ttl=600)
 def get_valuation(ticker: str | None = None) -> pd.DataFrame:
+    """Returns valuation summary data, optionally filtered to one company."""
     valuation_path = PROJECT_ROOT / "output" / "valuation_summary.xlsx"
     if not valuation_path.exists():
         return pd.DataFrame()

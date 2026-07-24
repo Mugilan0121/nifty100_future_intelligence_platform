@@ -69,6 +69,7 @@ KPI_CONFIG = [
 
 
 def load_all_ratios(conn):
+    """Loads the latest financial ratios for all companies."""
     ratios = pd.read_sql_query("SELECT * FROM financial_ratios", conn)
     ratios["year_num"] = ratios["year"].apply(year_num_flexible)
     ratios.dropna(subset=["year_num"], inplace=True)
@@ -98,6 +99,7 @@ def compute_trend(latest_val, prev_val, higher_is_better, flat_threshold, relati
 
 
 def build_kpi_tile(label, value_text, arrow, arrow_color_hex):
+    """Builds a single KPI tile flowable for the portfolio summary PDF."""
     if arrow:
         value_para = Paragraph(
             f'{value_text} <font color="#{arrow_color_hex}">{arrow}</font>',
@@ -121,6 +123,7 @@ def build_kpi_tile(label, value_text, arrow, arrow_color_hex):
 
 
 def build_company_page(company_id, company_name, sector, latest_row, prev_row):
+    """Builds a one-page summary section for a single company."""
     story = []
 
     header_table = Table(
@@ -165,6 +168,7 @@ def build_company_page(company_id, company_name, sector, latest_row, prev_row):
 
 
 def main():
+    """Generates the portfolio summary PDF covering all companies."""
     PORTFOLIO_DIR.mkdir(parents=True, exist_ok=True)
     conn = get_connection()
     companies = pd.read_sql_query(

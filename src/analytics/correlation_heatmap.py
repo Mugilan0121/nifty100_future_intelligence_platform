@@ -52,6 +52,7 @@ KPI_LABELS = {
 
 
 def get_connection() -> sqlite3.Connection:
+    """Returns a SQLite connection to the project database."""
     if not DATABASE_PATH.exists():
         raise FileNotFoundError(f"Database not found: {DATABASE_PATH}")
     return sqlite3.connect(DATABASE_PATH)
@@ -103,6 +104,7 @@ def apply_roe_sanity_guard(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> None:
+    """Generates the KPI correlation heatmap and saves it to reports/."""
     df = load_latest_kpis()
     df = apply_roe_sanity_guard(df)
 

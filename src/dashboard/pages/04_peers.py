@@ -56,6 +56,7 @@ for col in RADAR_METRICS:
         radar_data[col] = None
 
 def normalize_for_radar(series, invert=False):
+    """Normalizes a metric value onto a 0-1 scale for radar chart plotting."""
     valid = series.dropna()
     if valid.empty or valid.min() == valid.max():
         return series.apply(lambda x: 50 if x == x else 0)
@@ -119,6 +120,7 @@ table_df = table_df.rename(columns={**RADAR_METRICS, "company_id": "Ticker", "is
 table_df["Benchmark"] = table_df["Benchmark"].map({1: "⭐", 0: ""})
 
 def highlight_benchmark(row):
+    """Applies highlight styling to the benchmark company's row in the comparison table."""
     if row['Ticker'] == benchmark_ticker:
         return ['background-color: #fff3cd; color: #000000'] * len(row)
     return [''] * len(row)

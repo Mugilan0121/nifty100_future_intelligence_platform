@@ -38,6 +38,7 @@ KPIS = [
 
 
 def get_connection() -> sqlite3.Connection:
+    """Returns a SQLite connection to the project database."""
     if not DATABASE_PATH.exists():
         raise FileNotFoundError(f"Database not found: {DATABASE_PATH}")
     return sqlite3.connect(DATABASE_PATH)
@@ -110,6 +111,7 @@ def compute_portfolio_stats(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> None:
+    """Computes portfolio-wide percentile statistics and writes portfolio_stats.csv."""
     df = load_latest_kpis()
     df = apply_roe_sanity_guard(df)
 

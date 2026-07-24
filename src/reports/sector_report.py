@@ -38,12 +38,14 @@ header_cell_style = ParagraphStyle("header_cell", parent=styles["Normal"], fontS
 
 
 def get_connection() -> sqlite3.Connection:
+    """Returns a SQLite connection to the project database."""
     if not DB_PATH.exists():
         raise FileNotFoundError(f"Database not found at {DB_PATH}")
     return sqlite3.connect(DB_PATH)
 
 
 def year_num_flexible(y):
+    """Parses a year value in any known format into a sortable numeric form."""
     s = str(y).strip()
     m = re.search(r"(\d{4})$", s)
     if m:
@@ -67,6 +69,7 @@ METRICS = [
 
 
 def load_latest_ratios_with_sector(conn):
+    """Loads each company's latest financial ratios joined with sector info."""
     ratios = pd.read_sql_query(
         "SELECT fr.*, s.broad_sector FROM financial_ratios fr "
         "LEFT JOIN sectors s ON fr.company_id = s.company_id", conn
@@ -108,6 +111,7 @@ def sane_median(series, is_pct_ratio_metric=False):
 
 
 def build_sector_pdf(sector_name, sector_df, out_path):
+    """Builds the PDF report for a single sector."""
     doc = SimpleDocTemplate(
         str(out_path), pagesize=landscape(A4),
         topMargin=12 * mm, bottomMargin=12 * mm, leftMargin=12 * mm, rightMargin=12 * mm,
@@ -177,6 +181,7 @@ def build_sector_pdf(sector_name, sector_df, out_path):
 
 
 def main():
+    """Generates a PDF report for every sector."""
     SECTOR_DIR.mkdir(parents=True, exist_ok=True)
     conn = get_connection()
     latest = load_latest_ratios_with_sector(conn)

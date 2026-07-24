@@ -23,11 +23,13 @@ EXPECTED_TABLES = [
 
 
 def get_row_count(cursor, table_name):
+    """Returns the row count for a given table."""
     cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
     return cursor.fetchone()[0]
 
 
 def main():
+    """Prints row counts for all core tables as a post-load audit."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
